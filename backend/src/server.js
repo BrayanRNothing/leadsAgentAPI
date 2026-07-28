@@ -45,7 +45,7 @@ const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Cualquier otra ruta que no sea /api/... se la mandamos a React (para que funcione el React Router)
-app.get('/*', (req, res) => {
+app.get(/(.*)/, (req, res) => {
   if (!req.path.startsWith('/api/')) {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
   }
