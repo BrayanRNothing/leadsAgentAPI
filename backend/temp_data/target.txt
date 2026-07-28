@@ -1,0 +1,137 @@
+              leads[expandedCat]?.filter(l => {
+                if (filterFuente === 'all') return true;
+                const leadFuente = (l.fuente || 'desconocida').toLowerCase();
+                if (filterFuente === 'maps') return leadFuente.includes('maps');
+                return leadFuente.includes(filterFuente);
+              }).map(lead => (
+                <div 
+                  key={lead.id} 
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl transition-all ${lead.status === 'discarded' ? 'opacity-50 grayscale' : ''}`}
+                  style={{
+                    background: '#e0e5ec',
+                    boxShadow: '6px 6px 12px rgba(163,177,198,0.6), -6px -6px 12px rgba(255,255,255,0.8)',
+                  }}
+                >
+                  <div className={`flex flex-col flex-1 gap-1 ${lead.status === 'discarded' ? 'line-through' : ''}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-gray-800 text-lg">{lead.nombre}</span>
+                      <span className={`px-2 py-0.5 text-[9px] uppercase font-black tracking-wider rounded-md ${
+                        (lead.fuente || '').toLowerCase().includes('maps') || lead.fuente === 'Google Maps' ? 'bg-blue-100 text-blue-700' :
+                        (lead.fuente || '').toLowerCase() === 'facebook' ? 'bg-indigo-100 text-indigo-700' :
+                        (lead.fuente || '').toLowerCase() === 'instagram' ? 'bg-pink-100 text-pink-700' :
+                        (lead.fuente || '').toLowerCase() === 'linkedin' ? 'bg-sky-100 text-sky-700' :
+                        lead.fuente ? 'bg-purple-100 text-purple-700' : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        {lead.fuente || 'Desconocida'}
+                      </span>
+                    </div>
+                    
+                    {lead.direccion ? (
+                      <div className="flex items-start gap-1.5 text-xs text-gray-500 mb-2">
+                        <MapPin size={12} className="mt-0.5 shrink-0" />
+                        <span className="line-clamp-2">{lead.direccion}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-1.5 text-xs text-gray-400 mb-2 italic">
+                        <MapPin size={12} className="mt-0.5 shrink-0" />
+                        <span>Dirección no encontrada</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 mt-1 border-t border-gray-300/30 pt-3">
+                      {lead.telefono ? (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                          <Phone size={14} className="text-green-600" />
+                          <span>{lead.telefono}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400 italic">
+                          <Phone size={14} />
+                          <span>Teléfono no encontrado</span>
+                        </div>
+                      )}
+
+                      {/* Sitio web — solo mostrar si NO es un lead puramente social (donde sitioWeb es el perfil) */}
+                      {(() => {
+                        const esSocial = ['facebook', 'instagram', 'linkedin', 'twitter'].includes((lead.fuente || '').toLowerCase());
+                        // Parsear redes sociales guardadas
+                        let redesObj = {};
+                        try { redesObj = lead.redesSociales ? (typeof lead.redesSociales === 'string' ? JSON.parse(lead.redesSociales) : lead.redesSociales) : {}; } catch(e) {}
+                        // Para leads sociales, el sitioWeb ES el perfil de la red
+                        if (esSocial && lead.sitioWeb) {
+                          const isFb = (lead.fuente || '').toLowerCase() === 'facebook';
+                          const isIg = (lead.fuente || '').toLowerCase() === 'instagram';
+                          const isLi = (lead.fuente || '').toLowerCase() === 'linkedin';
+                          const color = isFb ? 'text-indigo-600' : isIg ? 'text-pink-500' : isLi ? 'text-sky-600' : 'text-purple-500';
+                          const label = isFb ? 'Ver perfil en Facebook' : isIg ? 'Ver perfil en Instagram' : isLi ? 'Ver perfil en LinkedIn' : 'Ver perfil social';
+                          return (
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                              <Globe size={14} className={color} />
+                              <a href={lead.sitioWeb} target="_blank" rel="noopener noreferrer" className={`hover:underline truncate max-w-[180px] ${color}`}>
+                                {label}
+                              </a>
+                            </div>
+                          );
+                        }
+                        // Para leads de Maps, mostrar sitio web normal
+                        if (lead.sitioWeb) {
+                          return (
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                              <Globe size={14} className="text-blue-500" />
+                              <a href={lead.sitioWeb} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-[150px]">
+                                Sitio web
+                              </a>
+                            </div>
+                          );
+                        }
+                        // Si tiene redes en el campo redesSociales aunque no tenga sitioWeb
+                        const primerRed = Object.entries(redesObj)[0];
+                        if (primerRed) {
+                          return (
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                              <Globe size={14} className="text-purple-500" />
+                              <a href={primerRed[1]} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-[150px] text-purple-600">
+                                {primerRed[0].charAt(0).toUpperCase() + primerRed[0].slice(1)}
+                              </a>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400 italic">
+                            <Globe size={14} />
+                            <span>Web no encontrada</span>
+                          </div>
+                        );
+                      })()}
+
+                      {lead.correo ? (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                          <Mail size={14} className="text-red-500" />
+                          <span>{lead.correo}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400 italic">
+                          <Mail size={14} />
+                          <span>Correo no encontrado</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 sm:mt-0 sm:ml-4 shrink-0 flex items-center self-end sm:self-center">
+                    <button 
+                      onClick={() => toggleStatus(lead.id, lead.status, expandedCat)}
+                      className="p-3 rounded-xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+                      title={lead.status === 'discarded' ? "Restaurar Lead" : "Descartar Lead"}
+                      style={{
+                        background: '#e0e5ec',
+                        boxShadow: '4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.8)'
+                      }}
+                    >
+                      {lead.status === 'discarded' ? <CheckCircle size={22} className="text-green-500" /> : <Ban size={22} className="text-red-500" />}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>

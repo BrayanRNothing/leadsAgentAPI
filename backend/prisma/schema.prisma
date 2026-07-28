@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Pipeline states for lead processing
+enum PipelineState {
+  NEW
+  SELECTED
+  CONTACTING
+  SENT
+  REPLIED
+  INTERESTED
+  NOT_INTERESTED
+  FOLLOW_UP
+  DISCARDED
+}
+
+model Usuario {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+}
+
+model Lead {
+  id              Int      @id @default(autoincrement())
+  nombre          String
+  telefono        String?
+  sitioWeb        String?
+  correo          String?
+  direccion       String?
+  categoria       String?
+  terminoBusqueda String
+  ubicacion       String?  // Estado/ciudad de la búsqueda
+  calificacion    Float?
+  reviews         Int?
+  lat             Float?
+  lng             Float?
+  redesSociales   Json?
+  fuente          String?  @default("maps")
+  status          String   @default("active") // "active" o "discarded"
+  pipelineState   PipelineState @default(NEW) // Pipeline stage for contact flow
+  contactoEstado  Json?    // Guarda estado de contacto: { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" }
+  creadoEn        DateTime @default(now())
+
+  // Relación con mensajes enviados
+  mensajes        LeadMensaje[]
+}
+
+model CampanaCorreo {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  asunto      String
+  cuerpo      String   // Plantilla HTML o texto
+  estado      String   @default("draft") // "draft", "sending", "completed"
+  creadoEn    DateTime @default(now())
+  
+  mensajes    LeadMensaje[]
+}
+
+model LeadMensaje {
+  id          Int      @id @default(autoincrement())
+  leadId      Int
+  campanaId   Int
+  estado      String   @default("pending") // "pending", "sent", "opened", "replied", "failed"
+  mensajeId   String?  // ID devuelto por Resend (para trackear)
+  enviadoEn   DateTime?
+  error       String?
+
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campana     CampanaCorreo @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+}
+
+model InegiLead {
+  id              Int      @id @default(autoincrement())
+  nombre          String
+  telefono        String?
+  sitioWeb        String?
+  correo          String?
+  direccion       String?
+  categoria       String?
+  terminoBusqueda String
+  ubicacion       String?
+  lat             Float?
+  lng             Float?
+  status          String   @default("active") // "active" o "discarded"
+  creadoEn        DateTime @default(now())
+}
+

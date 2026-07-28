@@ -1,0 +1,89 @@
+{
+  "name": "Listener de Respuestas (Inbound)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "event": "messageReceived",
+        "options": {
+          "query": "-from:me"
+        }
+      },
+      "id": "gmail-trigger-id",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tu-credential-id",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://TU_BACKEND_EN_RAILWAY/api/webhooks/email-reply",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $json.from }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.subject }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.textPlain }}"
+            },
+            {
+              "name": "threadId",
+              "value": "={{ $json.threadId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-request-id",
+      "name": "Avisar al Backend Node",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Avisar al Backend Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "23a9df8d-8a1f-4b0e-b83c-283839213812"
+}

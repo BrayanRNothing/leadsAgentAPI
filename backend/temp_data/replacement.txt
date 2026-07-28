@@ -1,0 +1,102 @@
+              leads[expandedCat]?.filter(l => {
+                if (filterFuente === 'all') return true;
+                const leadFuente = (l.fuente || 'desconocida').toLowerCase();
+                if (filterFuente === 'maps') return leadFuente.includes('maps');
+                return leadFuente.includes(filterFuente);
+              }).length > 0 ? (
+                <div className="overflow-x-auto rounded-2xl w-full" style={{
+                  background: '#e0e5ec',
+                  boxShadow: '6px 6px 12px rgba(163,177,198,0.6), -6px -6px 12px rgba(255,255,255,0.8)'
+                }}>
+                  <table className="w-full min-w-[800px] text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-300/30 text-xs text-gray-500 uppercase tracking-wider">
+                        <th className="p-4 font-black">Nombre</th>
+                        <th className="p-4 font-black">Teléfono</th>
+                        <th className="p-4 font-black">Correo</th>
+                        <th className="p-4 font-black">Sitio Web / Red</th>
+                        <th className="p-4 font-black text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-300/20 text-sm">
+                      {leads[expandedCat]?.filter(l => {
+                        if (filterFuente === 'all') return true;
+                        const leadFuente = (l.fuente || 'desconocida').toLowerCase();
+                        if (filterFuente === 'maps') return leadFuente.includes('maps');
+                        return leadFuente.includes(filterFuente);
+                      }).map(lead => {
+                        const esSocial = ['facebook', 'instagram', 'linkedin', 'twitter'].includes((lead.fuente || '').toLowerCase());
+                        let redesObj = {};
+                        try { redesObj = lead.redesSociales ? (typeof lead.redesSociales === 'string' ? JSON.parse(lead.redesSociales) : lead.redesSociales) : {}; } catch(e) {}
+                        
+                        let webDisplay = <span className="text-gray-400 italic text-xs">No encontrada</span>;
+                        if (esSocial && lead.sitioWeb) {
+                          const isFb = (lead.fuente || '').toLowerCase() === 'facebook';
+                          const isIg = (lead.fuente || '').toLowerCase() === 'instagram';
+                          const isLi = (lead.fuente || '').toLowerCase() === 'linkedin';
+                          const color = isFb ? 'text-indigo-600' : isIg ? 'text-pink-500' : isLi ? 'text-sky-600' : 'text-purple-500';
+                          webDisplay = <a href={lead.sitioWeb} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1.5 hover:underline truncate max-w-[150px] font-medium ${color}`}><Globe size={14}/> Perfil</a>;
+                        } else if (lead.sitioWeb) {
+                          webDisplay = <a href={lead.sitioWeb} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline truncate max-w-[150px] font-medium text-blue-500"><Globe size={14}/> Web</a>;
+                        } else if (Object.entries(redesObj)[0]) {
+                          const primerRed = Object.entries(redesObj)[0];
+                          webDisplay = <a href={primerRed[1]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline truncate max-w-[150px] font-medium text-purple-600"><Globe size={14}/> {primerRed[0]}</a>;
+                        }
+
+                        return (
+                          <tr key={lead.id} className={`transition-colors hover:bg-white/10 ${lead.status === 'discarded' ? 'opacity-40 grayscale' : ''}`}>
+                            <td className="p-4">
+                              <div className="flex flex-col gap-1">
+                                <span className={`font-bold text-gray-800 ${lead.status === 'discarded' ? 'line-through' : ''}`}>{lead.nombre}</span>
+                                <span className="text-xs text-gray-500 line-clamp-1 max-w-[200px]" title={lead.direccion}>{lead.direccion || 'Sin dirección'}</span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              {lead.telefono ? (
+                                <div className="flex items-center gap-1.5 font-bold text-gray-700">
+                                  <Phone size={14} className="text-green-600" />
+                                  <span>{lead.telefono}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">No encontrado</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {lead.correo ? (
+                                <div className="flex items-center gap-1.5 font-bold text-gray-700">
+                                  <Mail size={14} className="text-red-500" />
+                                  <span>{lead.correo}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">No encontrado</span>
+                              )}
+                            </td>
+                            <td className="p-4">{webDisplay}</td>
+                            <td className="p-4 text-center">
+                              <button 
+                                onClick={() => toggleStatus(lead.id, lead.status, expandedCat)}
+                                className="p-2 rounded-xl hover:scale-110 active:scale-95 transition-all inline-flex items-center justify-center"
+                                title={lead.status === 'discarded' ? "Restaurar Lead" : "Descartar Lead"}
+                                style={{
+                                  background: '#e0e5ec',
+                                  boxShadow: '2px 2px 5px rgba(163,177,198,0.5), -2px -2px 5px rgba(255,255,255,0.8)'
+                                }}
+                              >
+                                {lead.status === 'discarded' ? (
+                                  <CheckCircle size={16} className="text-green-500" />
+                                ) : (
+                                  <XCircle size={16} className="text-red-400" />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-4 italic">No hay leads para mostrar.</div>
+              )
+            )}
+          </div>

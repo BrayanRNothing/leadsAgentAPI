@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-textMain min-h-screen font-sans;
+  }
+}
+
+/* Clases utilitarias para neumorfismo, combinadas con Framer Motion */
+.neu-container {
+  @apply bg-background rounded-3xl shadow-neu-flat border border-white/20;
+}
+
+.neu-button {
+  @apply bg-background rounded-xl shadow-neu-flat transition-all duration-300 font-semibold text-textMain;
+}
+
+.neu-button:active {
+  @apply shadow-neu-pressed text-primary;
+}
+
+.neu-input {
+  @apply bg-background rounded-xl shadow-neu-pressed px-4 py-3 outline-none text-textMain placeholder-textLight focus:ring-2 focus:ring-primary/20 transition-all;
+}
+
+
+
+/* === POLYGON SCAN ANIMATION (cyan) === */
+@keyframes polygonPulse {
+  0% {
+    fill-opacity: 0.04;
+    stroke-opacity: 0.4;
+  }
+  50% {
+    fill-opacity: 0.18;
+    stroke-opacity: 1;
+  }
+  100% {
+    fill-opacity: 0.04;
+    stroke-opacity: 0.4;
+  }
+}
+
+.scanning-polygon-pulse {
+  animation: polygonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
