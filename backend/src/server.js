@@ -17,9 +17,22 @@ const prisma = new PrismaClient();
 
 app.get('/api/home-stats', async (req, res) => {
   try {
+    const pipelineStatesToExclude = ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'];
     const [mapsLeads, inegiLeads] = await Promise.all([
-      prisma.lead.count({ where: { fuente: 'maps' } }),
-      prisma.lead.count({ where: { fuente: 'inegi_saved' } })
+      prisma.lead.count({ 
+        where: { 
+          fuente: 'maps', 
+          status: { not: 'discarded' },
+          pipelineState: { notIn: pipelineStatesToExclude }
+        } 
+      }),
+      prisma.lead.count({ 
+        where: { 
+          fuente: 'inegi_saved',
+          status: { not: 'discarded' },
+          pipelineState: { notIn: pipelineStatesToExclude }
+        } 
+      })
     ]);
     res.json({ mapsLeads, inegiLeads });
   } catch (err) {

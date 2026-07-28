@@ -149,6 +149,20 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (sin
   }
 }
 
+function cleanEmailText(text) {
+  if (!text) return "(Sin texto)";
+  let cleaned = text;
+  // Remover historial de correos citado
+  const regex = /(\bEl\s+.+?escribió:|\bOn\s+.+?wrote:|---)/i;
+  const match = cleaned.match(regex);
+  if (match) {
+    cleaned = cleaned.substring(0, match.index);
+  }
+  // Remover = o espacios extras al inicio (falla común de Gmail con n8n)
+  cleaned = cleaned.replace(/^[\s=]+/, '').trim();
+  return cleaned || "(Sin texto)";
+}
+
 // 2. Webhook para recibir correos entrantes desde n8n (Inbound)
 router.post('/webhooks/email-reply', async (req, res) => {
   try {
@@ -226,7 +240,7 @@ router.post('/webhooks/email-reply', async (req, res) => {
         pipelineState: nextState,
         contactoEstado: {
           ...contactoActual,
-          ultimoMensajeRecibido: text || "(Sin texto)",
+          ultimoMensajeRecibido: cleanEmailText(text),
           aiAnalysis: aiAnalysis || null
         }
       }
