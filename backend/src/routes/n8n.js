@@ -158,16 +158,22 @@ router.post('/webhooks/email-reply', async (req, res) => {
     if (typeof cleanEmail === 'string') {
       const match = cleanEmail.match(/<(.+)>/);
       if (match) cleanEmail = match[1];
+      cleanEmail = cleanEmail.trim().toLowerCase();
     }
 
     // Buscar si ese correo pertenece a un lead
     const lead = await prisma.lead.findFirst({
-      where: { correo: cleanEmail }
+      where: { 
+        correo: {
+          equals: cleanEmail,
+          mode: 'insensitive'
+        }
+      }
     });
 
     if (!lead) {
       console.log('No se encontró lead asociado al correo:', cleanEmail);
-      return res.json({ success: false, message: 'Lead no encontrado' });
+      return res.json({ success: false, message: 'Lead no encontrado', searchedEmail: cleanEmail });
     }
 
     // Análisis de la IA (Groq)
