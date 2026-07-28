@@ -59,7 +59,9 @@ router.post('/mark-sent', async (req, res) => {
       return res.status(400).json({ error: 'Falta leadIds' });
     }
 
-    const leads = await prisma.lead.findMany({ where: { id: { in: leadIds } } });
+    const parsedLeadIds = leadIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+
+    const leads = await prisma.lead.findMany({ where: { id: { in: parsedLeadIds } } });
     
     for (const lead of leads) {
       let contactoEstado = lead.contactoEstado || { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" };
@@ -81,10 +83,10 @@ router.post('/mark-sent', async (req, res) => {
     }
 
     if (mensajeIds && Array.isArray(mensajeIds)) {
-      const validMsgIds = mensajeIds.filter(id => id !== null);
-      if (validMsgIds.length > 0) {
+      const parsedMsgIds = mensajeIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (parsedMsgIds.length > 0) {
         await prisma.leadMensaje.updateMany({
-          where: { id: { in: validMsgIds } },
+          where: { id: { in: parsedMsgIds } },
           data: { estado: 'sent', enviadoEn: new Date() }
         });
       }
