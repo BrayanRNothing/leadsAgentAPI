@@ -132,7 +132,7 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (sin
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama3-8b-8192", // Modelo rápido y gratuito de Groq
+      model: "llama-3.1-8b-instant", // Modelo actualizado (el anterior fue descontinuado por Groq)
       temperature: 0.1, // Baja temperatura para respuestas más predecibles
       response_format: { type: "json_object" }
     });
@@ -151,7 +151,7 @@ router.post('/webhooks/email-reply', async (req, res) => {
     // Datos que n8n debe enviar
     const { from, subject, text, threadId } = req.body;
 
-    console.log('📬 Nuevo correo recibido de:', from);
+    console.log('📬 Nuevo correo recibido. Body completo:', JSON.stringify(req.body, null, 2));
 
     // Limpiar el email de formato "Nombre <email@dom.com>"
     let cleanEmail = from || "";
@@ -159,6 +159,8 @@ router.post('/webhooks/email-reply', async (req, res) => {
       const match = cleanEmail.match(/<(.+)>/);
       if (match) cleanEmail = match[1];
       cleanEmail = cleanEmail.trim().toLowerCase();
+    } else {
+      console.log('⚠️ El campo "from" no es un string:', from);
     }
 
     // Buscar si ese correo pertenece a un lead
@@ -172,8 +174,14 @@ router.post('/webhooks/email-reply', async (req, res) => {
     });
 
     if (!lead) {
-      console.log('No se encontró lead asociado al correo:', cleanEmail);
-      return res.json({ success: false, message: 'Lead no encontrado', searchedEmail: cleanEmail });
+      console.log('No se encontró lead asociado al correo:', cleanEmail, '| raw from:', from);
+      return res.json({ 
+        success: false, 
+        message: 'Lead no encontrado', 
+        searchedEmail: cleanEmail,
+        rawFromReceived: from,
+        bodyReceived: req.body
+      });
     }
 
     // Análisis de la IA (Groq)
