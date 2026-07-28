@@ -110,11 +110,22 @@ async function analyzeEmailWithAI(text, leadInfo) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   
   try {
+    // Aquí puedes editar la información de tu negocio para que la IA la sepa responder.
+    const knowledgeBase = {
+      nombre_empresa: "Tu Agencia / Servicio",
+      servicios: ["Marketing Digital", "Desarrollo Web", "Automatizaciones"],
+      contacto_ventas: "cesar.zd@gmail.com",
+      link_calendly: "https://calendly.com/tu-usuario/reunion-30-min",
+      info_extra: "Ofrecemos asesoría gratuita inicial. Precios a la medida según requerimientos."
+    };
+
     const prompt = `Eres un experto asistente de ventas. Tu trabajo es analizar la nueva respuesta de un cliente potencial a nuestro correo de prospección.
 El nombre del lead es: ${leadInfo.nombre}
 Su término de búsqueda (giro) es: ${leadInfo.terminoBusqueda || 'No especificado'}
 
-A continuación te paso el texto del correo que recibimos.
+INFORMACIÓN DE TU EMPRESA (Úsala para responder dudas):
+${JSON.stringify(knowledgeBase, null, 2)}
+
 ATENCIÓN: El correo suele incluir el historial de los mensajes anteriores en la parte inferior (por ejemplo, después de fechas, "escribió:" o "wrote:"). 
 DEBES IGNORAR COMPLETAMENTE el correo original. Concéntrate EXCLUSIVAMENTE en lo que el cliente acaba de responder (las primeras líneas del mensaje).
 
@@ -131,7 +142,7 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (sin
 {
   "classification": "una de las 4 categorias",
   "reasoning": "breve justificación de tu decisión",
-  "suggested_reply": "Si es INTERESTED o DOUBT, redacta la respuesta ideal para enviársela. Si es NOT_INTERESTED, déjalo vacío."
+  "suggested_reply": "Si es INTERESTED o DOUBT, redacta la respuesta ideal usando la información de la empresa. Si es MEETING, redacta un correo que sugiera un horario, incluya el enlace de Calendly y pida amablemente confirmar poniendo en copia (CC) a cesar.zd@gmail.com. Si es NOT_INTERESTED, déjalo vacío."
 }`;
 
     const completion = await groq.chat.completions.create({
@@ -238,6 +249,7 @@ router.post('/webhooks/email-reply', async (req, res) => {
       where: { id: lead.id },
       data: { 
         pipelineState: nextState,
+        status: nextState === 'NOT_INTERESTED' ? 'discarded' : undefined,
         contactoEstado: {
           ...contactoActual,
           ultimoMensajeRecibido: cleanEmailText(text),
