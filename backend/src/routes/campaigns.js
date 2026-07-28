@@ -8,8 +8,9 @@ const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 router.post('/send', async (req, res) => {
-  const { leads, asunto, cuerpo, nombreCampana } = req.body;
-  if (!leads || !leads.length || !asunto || !cuerpo || !nombreCampana) {
+  const { leads, asunto, cuerpo, nombreCampana, campanaNombre } = req.body;
+  const finalName = nombreCampana || campanaNombre;
+  if (!leads || !leads.length || !asunto || !cuerpo || !finalName) {
     return res.status(400).json({ error: 'Faltan datos para crear la campaña' });
   }
 
@@ -17,7 +18,7 @@ router.post('/send', async (req, res) => {
     // 1. Crear campaña en la BD
     const campana = await prisma.campanaCorreo.create({
       data: {
-        nombre: nombreCampana,
+        nombre: finalName,
         asunto: asunto,
         cuerpo: cuerpo,
         estado: 'sending'
