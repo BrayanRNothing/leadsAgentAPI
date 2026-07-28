@@ -1,0 +1,76 @@
+{
+  "name": "Inbound Email Listener (Leads Agent)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "action": "message",
+        "format": "resolved",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Gmail Trigger (New Emails)",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://leadsagentapi-production.up.railway.app/api/n8n/webhooks/email-reply",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $json.from }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.subject }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "threadId",
+              "value": "={{ $json.threadId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Send to Backend (AI Analyzer)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        220,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Gmail Trigger (New Emails)": {
+      "main": [
+        [
+          {
+            "node": "Send to Backend (AI Analyzer)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

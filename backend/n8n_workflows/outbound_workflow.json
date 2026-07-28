@@ -1,0 +1,140 @@
+{
+  "name": "Outbound Email Campaign (Leads Agent)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://leadsagentapi-production.up.railway.app/api/n8n/leads-outbound?limit=5",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Get Leads from Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "leads",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Item Lists (Split)",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.correo }}",
+        "subject": "Propuesta para tu negocio",
+        "emailType": "text",
+        "message": "=Hola {{ $json.nombre }},\n\nHe notado que tu negocio está creciendo y me gustaría ofrecerte una propuesta personalizada...\n\nSaludos.",
+        "options": {}
+      },
+      "id": "4",
+      "name": "Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://leadsagentapi-production.up.railway.app/api/n8n/mark-sent",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "leadIds",
+              "value": "={{ [$json.id] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "Mark as Sent in Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        880,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Leads from Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Leads from Backend": {
+      "main": [
+        [
+          {
+            "node": "Item Lists (Split)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists (Split)": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Mark as Sent in Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
