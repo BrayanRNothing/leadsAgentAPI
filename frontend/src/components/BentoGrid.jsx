@@ -111,12 +111,18 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [stats, setStats] = useState({ mapsLeads: 0, inegiLeads: 0 });
+  const [aiStats, setAiStats] = useState({ usedTokens: 0, maxTokens: 500000 });
 
   React.useEffect(() => {
     fetch('https://leadsagentapi-production.up.railway.app/api/home-stats')
       .then(r => r.json())
       .then(data => setStats(data))
       .catch(e => console.error("Error fetching home stats", e));
+
+    fetch('https://leadsagentapi-production.up.railway.app/api/ai-stats')
+      .then(r => r.json())
+      .then(data => setAiStats(data))
+      .catch(e => console.error("Error fetching AI stats", e));
   }, [location.pathname]);
 
   // Componente para Nodos del Pipeline (Horizontales y compactos)
@@ -190,6 +196,27 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
               <div className="flex flex-col w-full max-w-4xl mx-auto relative z-20 mb-32 pb-10 px-2 sm:px-4 mt-8">
 
                 <div className="flex flex-col gap-12 w-full">
+                  
+                  {/* AI Tokens Progress Bar */}
+                  <div className="w-full bg-[#e0e5ec] p-4 rounded-2xl shadow-[4px_4px_8px_rgba(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+                        <Flame size={14} className="text-indigo-500" /> IA Tokens (Groq)
+                      </span>
+                      <span className="text-xs font-black text-gray-700">
+                        {aiStats.usedTokens.toLocaleString()} <span className="text-gray-400 font-medium">/ {aiStats.maxTokens.toLocaleString()}</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(163,177,198,0.3)', boxShadow: 'inset 2px 2px 4px rgba(163,177,198,0.5)' }}>
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (aiStats.usedTokens / aiStats.maxTokens) * 100)}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="h-full bg-indigo-500 rounded-full"
+                        style={{ boxShadow: '0 0 10px rgba(99,102,241,0.5)' }}
+                      />
+                    </div>
+                  </div>
                   
                   {/* Flujo INEGI */}
                   <div className="w-full">

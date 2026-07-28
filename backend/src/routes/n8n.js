@@ -152,6 +152,11 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (sin
       response_format: { type: "json_object" }
     });
 
+    if (!global.aiTokensUsed) global.aiTokensUsed = 0;
+    if (completion.usage && completion.usage.total_tokens) {
+      global.aiTokensUsed += completion.usage.total_tokens;
+    }
+
     const result = JSON.parse(completion.choices[0].message.content);
     return result;
   } catch (error) {

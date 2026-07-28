@@ -46,6 +46,15 @@ app.use('/api/inegi', require('./routes/inegi'));
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/n8n', require('./routes/n8n'));
 
+app.get('/api/ai-stats', (req, res) => {
+  res.json({
+    usedTokens: global.aiTokensUsed || 0,
+    maxTokens: 500000 // Límite visual sugerido para plan gratis Groq (diario)
+  });
+});
+
+app.use('/api/auth', require('./routes/auth'));
+
 // Ruta de salud para verificar que el servidor responde
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
