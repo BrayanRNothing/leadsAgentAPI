@@ -110,14 +110,18 @@ async function analyzeEmailWithAI(text, leadInfo) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   
   try {
-    const prompt = `Eres un asistente de ventas. Tu trabajo es analizar la respuesta de un cliente potencial (Lead) a nuestro correo de prospección en frío.
+    const prompt = `Eres un experto asistente de ventas. Tu trabajo es analizar la nueva respuesta de un cliente potencial a nuestro correo de prospección.
 El nombre del lead es: ${leadInfo.nombre}
-Su término de búsqueda (giro) es: ${leadInfo.terminoBusqueda}
+Su término de búsqueda (giro) es: ${leadInfo.terminoBusqueda || 'No especificado'}
 
-El cliente respondió lo siguiente al correo:
+A continuación te paso el texto del correo que recibimos.
+ATENCIÓN: El correo suele incluir el historial de los mensajes anteriores en la parte inferior (por ejemplo, después de fechas, "escribió:" o "wrote:"). 
+DEBES IGNORAR COMPLETAMENTE el correo original. Concéntrate EXCLUSIVAMENTE en lo que el cliente acaba de responder (las primeras líneas del mensaje).
+
+Respuesta del cliente:
 "${text}"
 
-Clasifica la intención del cliente en una de estas categorías:
+Clasifica la intención de LA NUEVA RESPUESTA del cliente en una de estas categorías:
 1. "INTERESTED": Muestra interés claro en el producto/servicio.
 2. "NOT_INTERESTED": Pide que dejen de molestar o dice que no le interesa.
 3. "DOUBT": Hace una pregunta sobre el servicio o precio antes de decidir.
