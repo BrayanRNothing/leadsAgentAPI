@@ -288,6 +288,28 @@ router.patch('/:id/pipeline', async (req, res) => {
   }
 });
 
+// Obtener leads en el Pipeline (CRM)
+router.get('/pipeline', async (req, res) => {
+  try {
+    const { dbMode } = req.query;
+    const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
+
+    const leads = await prisma.lead.findMany({
+      where: {
+        fuente: fuenteFilter,
+        pipelineState: {
+          notIn: ['NEW', 'SELECTED', 'DISCARDED']
+        }
+      },
+      orderBy: { id: 'desc' }
+    });
+    res.json(leads);
+  } catch (error) {
+    console.error('Error obteniendo leads de pipeline:', error.message);
+    res.status(500).json({ error: 'Error al obtener leads del pipeline' });
+  }
+});
+
 // Obtener conteo de leads por pipelineState (opcional: ?dbMode=inegi)
 router.get('/pipeline-stats', async (req, res) => {
   try {

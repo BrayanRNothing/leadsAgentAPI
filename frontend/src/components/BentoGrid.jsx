@@ -224,7 +224,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                           icon={<Flame size={20} color="#ed8936" />}
                           count={0}
                           color="#ed8936"
-                          route="#"
+                          route="/pipeline/inegi"
                           delay={0.7}
                         />
                       </div>
@@ -267,7 +267,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                           icon={<Flame size={20} color="#ed8936" />}
                           count={0}
                           color="#ed8936"
-                          route="#"
+                          route="/pipeline/maps"
                           delay={0.8}
                         />
                       </div>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import BentoGrid from './components/BentoGrid';
+import PipelineView from './components/PipelineView';
 import { ScrapingProvider } from './context/ScrapingContext';
-import { BrowserRouter } from 'react-router-dom';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
@@ -24,12 +25,21 @@ function App() {
     >
       <BrowserRouter>
         <ScrapingProvider>
-        <BentoGrid
-          isAuthenticated={isAuthenticated}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-          username={username}
-        />
+        <Routes>
+          <Route path="/*" element={
+            <BentoGrid
+              isAuthenticated={isAuthenticated}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              username={username}
+            />
+          } />
+          <Route path="/pipeline/:dbMode" element={
+            <div className="fixed inset-0 z-50 bg-[#e0e5ec] overflow-hidden flex flex-col">
+              <PipelineView onBack={() => window.location.href = '/'} />
+            </div>
+          } />
+        </Routes>
         </ScrapingProvider>
       </BrowserRouter>
     </div>
