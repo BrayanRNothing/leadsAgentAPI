@@ -17,7 +17,7 @@ router.get('/leads-outbound', async (req, res) => {
         mensajes: {
           where: { estado: 'pending' },
           include: { campana: true },
-          orderBy: { creadoEn: 'asc' },
+          orderBy: { id: 'asc' },
           take: 1
         }
       },
@@ -59,10 +59,26 @@ router.post('/mark-sent', async (req, res) => {
       return res.status(400).json({ error: 'Falta leadIds' });
     }
 
-    await prisma.lead.updateMany({
-      where: { id: { in: leadIds } },
-      data: { pipelineState: 'SENT' }
-    });
+    const leads = await prisma.lead.findMany({ where: { id: { in: leadIds } } });
+    
+    for (const lead of leads) {
+      let contactoEstado = lead.contactoEstado || { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" };
+      if (typeof contactoEstado === 'string') {
+        try { contactoEstado = JSON.parse(contactoEstado); } catch(e) { contactoEstado = { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" }; }
+      }
+      
+      // Auto marcar el checkbox de correo enviado
+      contactoEstado.correo = true;
+      contactoEstado.estado = "Esperando respuesta";
+
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          pipelineState: 'SENT',
+          contactoEstado: contactoEstado
+        }
+      });
+    }
 
     if (mensajeIds && Array.isArray(mensajeIds)) {
       const validMsgIds = mensajeIds.filter(id => id !== null);
