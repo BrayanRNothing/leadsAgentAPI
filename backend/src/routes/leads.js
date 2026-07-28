@@ -298,7 +298,7 @@ router.get('/pipeline', async (req, res) => {
       where: {
         fuente: fuenteFilter,
         pipelineState: {
-          notIn: ['NEW', 'SELECTED', 'DISCARDED']
+          in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED']
         }
       },
       orderBy: { id: 'desc' }

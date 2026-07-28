@@ -139,10 +139,23 @@ router.post('/webhooks/email-reply', async (req, res) => {
       }
     }
 
+    // Obtener estado de contacto actual o inicializarlo
+    let contactoActual = {};
+    if (lead.contactoEstado) {
+      contactoActual = typeof lead.contactoEstado === 'string' ? JSON.parse(lead.contactoEstado) : lead.contactoEstado;
+    }
+
     // Actualizar estado del lead en la BD
     await prisma.lead.update({
       where: { id: lead.id },
-      data: { pipelineState: nextState }
+      data: { 
+        pipelineState: nextState,
+        contactoEstado: {
+          ...contactoActual,
+          ultimoMensajeRecibido: text,
+          aiAnalysis: aiAnalysis
+        }
+      }
     });
 
     console.log(`✅ Lead ${lead.nombre} actualizado a estado: ${nextState}.`);

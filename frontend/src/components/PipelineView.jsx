@@ -5,8 +5,6 @@ import { ArrowLeft, Mail, Phone, ExternalLink, MessageSquare, AlertCircle, Refre
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PIPELINE_COLUMNS = [
-  { id: 'CONTACTING', label: 'Enviando / Contactando', color: 'border-blue-400', bg: 'bg-blue-100', text: 'text-blue-700' },
-  { id: 'SENT', label: 'Enviados', color: 'border-purple-400', bg: 'bg-purple-100', text: 'text-purple-700' },
   { id: 'REPLIED', label: 'Respondieron', color: 'border-yellow-400', bg: 'bg-yellow-100', text: 'text-yellow-700' },
   { id: 'INTERESTED', label: 'Interesados', color: 'border-orange-400', bg: 'bg-orange-100', text: 'text-orange-700' },
   { id: 'FOLLOW_UP', label: 'En Seguimiento', color: 'border-teal-400', bg: 'bg-teal-100', text: 'text-teal-700' },
@@ -19,6 +17,7 @@ export default function PipelineView({ onBack }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draggedLeadId, setDraggedLeadId] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
 
   const fetchPipeline = async () => {
     setLoading(true);
@@ -166,7 +165,7 @@ export default function PipelineView({ onBack }) {
                       <h4 className="font-bold text-gray-800 leading-tight mb-1">{lead.nombre}</h4>
                       <p className="text-xs font-medium text-gray-500 mb-3 truncate">{lead.categoria || lead.terminoBusqueda}</p>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mb-2">
                         {lead.telefono && (
                           <button
                             onClick={() => openWhatsApp(lead.telefono)}
@@ -197,6 +196,13 @@ export default function PipelineView({ onBack }) {
                           </a>
                         )}
                       </div>
+                      
+                      <button 
+                        onClick={() => setSelectedLead(lead)}
+                        className="w-full text-xs font-bold py-1.5 rounded-lg text-teal-700 bg-teal-100 hover:bg-teal-200 transition-colors flex items-center justify-center gap-1 mt-2"
+                      >
+                        <MessageSquare size={14} /> Ver Respuesta
+                      </button>
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -212,6 +218,71 @@ export default function PipelineView({ onBack }) {
           
         </div>
       </div>
+
+      {/* Modal Ver Respuesta */}
+      <AnimatePresence>
+        {selectedLead && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-2xl rounded-[2rem] p-8 relative flex flex-col max-h-[90vh] shadow-2xl"
+              style={{ background: '#e0e5ec' }}
+            >
+              <button 
+                onClick={() => setSelectedLead(null)} 
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/50 shadow-sm">✕</div>
+              </button>
+              
+              <h2 className="text-2xl font-black text-gray-800 mb-1">{selectedLead.nombre}</h2>
+              <p className="text-sm font-semibold text-gray-500 mb-6">{selectedLead.correo}</p>
+
+              <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-6">
+                
+                {/* Mensaje del cliente */}
+                <div className="p-5 rounded-2xl bg-white shadow-sm border border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Mail size={14} /> Mensaje Recibido
+                  </h3>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap font-medium">
+                    {selectedLead.contactoEstado?.ultimoMensajeRecibido || <span className="text-gray-400 italic">No hay mensaje guardado para este lead. Probablemente se clasificó manualmente.</span>}
+                  </div>
+                </div>
+
+                {/* Análisis de IA */}
+                {selectedLead.contactoEstado?.aiAnalysis && (
+                  <div className="p-5 rounded-2xl bg-purple-50 shadow-sm border border-purple-100">
+                    <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <AlertCircle size={14} /> Análisis de IA Groq
+                    </h3>
+                    <div className="mb-3">
+                      <span className="inline-block px-3 py-1 bg-purple-200 text-purple-800 text-xs font-black rounded-full mb-2">
+                        {selectedLead.contactoEstado.aiAnalysis.classification}
+                      </span>
+                      <p className="text-sm text-gray-700 font-medium">
+                        <span className="font-bold">Razonamiento:</span> {selectedLead.contactoEstado.aiAnalysis.reasoning}
+                      </p>
+                    </div>
+                    
+                    {selectedLead.contactoEstado.aiAnalysis.suggested_reply && (
+                      <div className="mt-4 pt-4 border-t border-purple-200">
+                        <span className="text-xs font-bold text-purple-500 uppercase tracking-wider block mb-2">Respuesta Sugerida por IA</span>
+                        <div className="text-sm text-gray-600 italic bg-white p-3 rounded-xl border border-purple-100">
+                          {selectedLead.contactoEstado.aiAnalysis.suggested_reply}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
