@@ -154,9 +154,11 @@ router.post('/webhooks/email-reply', async (req, res) => {
     console.log('📬 Nuevo correo recibido de:', from);
 
     // Limpiar el email de formato "Nombre <email@dom.com>"
-    let cleanEmail = from;
-    const match = from.match(/<(.+)>/);
-    if (match) cleanEmail = match[1];
+    let cleanEmail = from || "";
+    if (typeof cleanEmail === 'string') {
+      const match = cleanEmail.match(/<(.+)>/);
+      if (match) cleanEmail = match[1];
+    }
 
     // Buscar si ese correo pertenece a un lead
     const lead = await prisma.lead.findFirst({
@@ -225,7 +227,7 @@ router.post('/webhooks/email-reply', async (req, res) => {
     });
   } catch (error) {
     console.error('Error en webhook de respuesta:', error);
-    res.status(500).json({ success: false, error: 'Error interno' });
+    res.status(500).json({ success: false, error: 'Error interno', details: error.message, stack: error.stack });
   }
 });
 
