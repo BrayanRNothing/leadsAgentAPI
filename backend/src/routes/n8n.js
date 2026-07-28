@@ -17,7 +17,7 @@ router.get('/leads-outbound', async (req, res) => {
         mensajes: {
           where: { estado: 'pending' },
           include: { campana: true },
-          orderBy: { id: 'asc' },
+          orderBy: { id: 'desc' }, // <- Cambiado a desc para tomar la campaña más reciente
           take: 1
         }
       },
