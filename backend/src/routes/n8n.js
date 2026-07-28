@@ -46,9 +46,15 @@ router.post('/mark-sent', async (req, res) => {
 });
 
 const { Groq } = require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function analyzeEmailWithAI(text, leadInfo) {
+  if (!process.env.GROQ_API_KEY) {
+    console.error('❌ Error: GROQ_API_KEY no está configurada. Saltando análisis de IA.');
+    return null;
+  }
+  
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  
   try {
     const prompt = `Eres un asistente de ventas. Tu trabajo es analizar la respuesta de un cliente potencial (Lead) a nuestro correo de prospección en frío.
 El nombre del lead es: ${leadInfo.nombre}
