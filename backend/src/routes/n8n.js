@@ -8,14 +8,40 @@ router.get('/leads-outbound', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     
-    // Buscar leads que estén listos para ser contactados (ej. pipelineState = 'SELECTED' o 'CONTACTING')
-    // Asumimos que cuando pasas a la fase de contacto, los pones en 'CONTACTING'
-    const leads = await prisma.lead.findMany({
+    const leadsDb = await prisma.lead.findMany({
       where: {
         pipelineState: 'CONTACTING',
         correo: { not: null }
       },
+      include: {
+        mensajes: {
+          where: { estado: 'pending' },
+          include: { campana: true },
+          orderBy: { creadoEn: 'asc' },
+          take: 1
+        }
+      },
       take: limit
+    });
+
+    const leads = leadsDb.map(l => {
+      const msg = l.mensajes[0];
+      let subject = 'Propuesta de Valor';
+      let body = `Hola ${l.nombre || 'Amigo'},\n\nNos gustaría conectar contigo.`;
+      
+      if (msg && msg.campana) {
+        subject = msg.campana.asunto;
+        body = msg.campana.cuerpo.replace(/{{nombre}}/g, l.nombre || 'Amigo');
+      }
+
+      return {
+        id: l.id,
+        nombre: l.nombre,
+        correo: l.correo,
+        n8n_subject: subject,
+        n8n_body: body,
+        mensajeId: msg ? msg.id : null
+      };
     });
 
     res.json({ success: true, count: leads.length, leads });
@@ -28,7 +54,7 @@ router.get('/leads-outbound', async (req, res) => {
 // Endpoint para que n8n marque como enviados los correos
 router.post('/mark-sent', async (req, res) => {
   try {
-    const { leadIds } = req.body; // Array de IDs
+    const { leadIds, mensajeIds } = req.body; // Array de IDs
     if (!leadIds || !Array.isArray(leadIds)) {
       return res.status(400).json({ error: 'Falta leadIds' });
     }
@@ -37,6 +63,16 @@ router.post('/mark-sent', async (req, res) => {
       where: { id: { in: leadIds } },
       data: { pipelineState: 'SENT' }
     });
+
+    if (mensajeIds && Array.isArray(mensajeIds)) {
+      const validMsgIds = mensajeIds.filter(id => id !== null);
+      if (validMsgIds.length > 0) {
+        await prisma.leadMensaje.updateMany({
+          where: { id: { in: validMsgIds } },
+          data: { estado: 'sent', enviadoEn: new Date() }
+        });
+      }
+    }
 
     res.json({ success: true });
   } catch (error) {

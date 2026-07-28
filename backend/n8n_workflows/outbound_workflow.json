@@ -52,9 +52,9 @@
     {
       "parameters": {
         "sendTo": "={{ $json.correo }}",
-        "subject": "Propuesta para tu negocio",
+        "subject": "={{ $json.n8n_subject }}",
         "emailType": "text",
-        "message": "=Hola {{ $json.nombre }},\n\nHe notado que tu negocio está creciendo y me gustaría ofrecerte una propuesta personalizada...\n\nSaludos.",
+        "message": "={{ $json.n8n_body }}",
         "options": {}
       },
       "id": "4",
@@ -76,6 +76,10 @@
             {
               "name": "leadIds",
               "value": "={{ [$json.id] }}"
+            },
+            {
+              "name": "mensajeIds",
+              "value": "={{ [$json.mensajeId] }}"
             }
           ]
         },
