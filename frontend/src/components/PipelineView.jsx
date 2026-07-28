@@ -163,7 +163,26 @@ export default function PipelineView({ onBack }) {
                       }}
                     >
                       <h4 className="font-bold text-gray-800 leading-tight mb-1">{lead.nombre}</h4>
-                      <p className="text-xs font-medium text-gray-500 mb-3 truncate">{lead.categoria || lead.terminoBusqueda}</p>
+                      <p className="text-xs font-medium text-gray-500 mb-2 truncate">{lead.categoria || lead.terminoBusqueda}</p>
+                      
+                      {/* Información extra solicitada por el usuario */}
+                      <div className="text-[10px] text-gray-500 bg-gray-100/50 rounded-lg p-1.5 mb-2 font-medium">
+                        {lead.mensajes && lead.mensajes.length > 0 && lead.mensajes[0].enviadoEn ? (
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <Mail size={10} className="text-blue-500" />
+                            Enviado: {new Date(lead.mensajes[0].enviadoEn).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <AlertCircle size={10} className="text-gray-400" />
+                            Sin campañas registradas
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                          Ingresó: {new Date(lead.creadoEn).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                        </div>
+                      </div>
                       
                       <div className="flex gap-2 mb-2">
                         {lead.telefono && (

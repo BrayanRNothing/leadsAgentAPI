@@ -17,7 +17,8 @@ router.get('/categorias', async (req, res) => {
       by: ['terminoBusqueda', 'ubicacion'],
       where: {
         fuente: fuenteFilter,
-        status: { not: 'discarded' }
+        status: { not: 'discarded' },
+        pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'] }
       },
       _count: {
         _all: true
@@ -46,7 +47,8 @@ router.get('/categorias/:termino/leads', async (req, res) => {
     const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
 
     const whereObj = {
-      fuente: fuenteFilter
+      fuente: fuenteFilter,
+      pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'] }
     };
     
     if (termino !== 'ALL') {
@@ -299,6 +301,12 @@ router.get('/pipeline', async (req, res) => {
         fuente: fuenteFilter,
         pipelineState: {
           in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED']
+        }
+      },
+      include: {
+        mensajes: {
+          orderBy: { enviadoEn: 'desc' },
+          take: 1
         }
       },
       orderBy: { id: 'desc' }
