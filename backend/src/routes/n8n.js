@@ -206,8 +206,8 @@ router.post('/webhooks/email-reply', async (req, res) => {
         pipelineState: nextState,
         contactoEstado: {
           ...contactoActual,
-          ultimoMensajeRecibido: text,
-          aiAnalysis: aiAnalysis
+          ultimoMensajeRecibido: text || "(Sin texto)",
+          aiAnalysis: aiAnalysis || null
         }
       }
     });
