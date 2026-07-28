@@ -82,6 +82,33 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
           setIsSendingEmail(false);
           setShowEmailModal(false);
           setEmailProgress(null);
+          
+          // Actualizar la UI localmente para que se marque el checkbox de inmediato
+          setLeads(prev => {
+            const newLeads = { ...prev };
+            const catLeads = [...(newLeads[expandedCat.catId] || [])];
+            leadsToSend.forEach(sentLead => {
+              const idx = catLeads.findIndex(l => l.id === sentLead.id);
+              if (idx !== -1) {
+                const currentContacto = typeof catLeads[idx].contactoEstado === 'string' 
+                  ? JSON.parse(catLeads[idx].contactoEstado) 
+                  : (catLeads[idx].contactoEstado || { correo: false, estado: "En Proceso" });
+                
+                catLeads[idx] = {
+                  ...catLeads[idx],
+                  pipelineState: 'CONTACTING',
+                  contactoEstado: {
+                    ...currentContacto,
+                    correo: true, // Lo marcamos visualmente
+                    estado: "Esperando respuesta"
+                  }
+                };
+              }
+            });
+            newLeads[expandedCat.catId] = catLeads;
+            return newLeads;
+          });
+          
         } else {
           setEmailProgress({ sent, total: leadsToSend.length });
         }
