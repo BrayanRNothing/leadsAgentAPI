@@ -15,7 +15,7 @@ export default function InegiView({ onBack }) {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/inegi/stats');
+      const res = await fetch('https://leadsagentapi-production.up.railway.app/api/inegi/stats');
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -34,7 +34,7 @@ export default function InegiView({ onBack }) {
       if (filterTelefono) params.append('telefono', 'true');
       if (filterCorreo) params.append('correo', 'true');
 
-      const res = await fetch(`http://localhost:3001/api/inegi/leads?${params.toString()}`);
+      const res = await fetch(`https://leadsagentapi-production.up.railway.app/api/inegi/leads?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setLeads(data.data);
@@ -64,7 +64,7 @@ export default function InegiView({ onBack }) {
 
   const handleApartar = async (lead) => {
     try {
-      await fetch('http://localhost:3001/api/inegi/apartar', {
+      await fetch('https://leadsagentapi-production.up.railway.app/api/inegi/apartar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inegiLeadId: lead.id })

@@ -22,7 +22,7 @@ export default function PipelineView({ onBack }) {
   const fetchPipeline = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:3001/api/leads/pipeline?dbMode=${dbMode}`);
+      const res = await axios.get(`https://leadsagentapi-production.up.railway.app/api/leads/pipeline?dbMode=${dbMode}`);
       setLeads(res.data);
     } catch (error) {
       console.error('Error fetching pipeline', error);
@@ -40,7 +40,7 @@ export default function PipelineView({ onBack }) {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, pipelineState: newState } : l));
     
     try {
-      await axios.patch(`http://localhost:3001/api/leads/${leadId}/pipeline`, {
+      await axios.patch(`https://leadsagentapi-production.up.railway.app/api/leads/${leadId}/pipeline`, {
         pipelineState: newState
       });
     } catch (error) {

@@ -113,7 +113,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
   const [stats, setStats] = useState({ mapsLeads: 0, inegiLeads: 0 });
 
   React.useEffect(() => {
-    fetch('http://localhost:3001/api/home-stats')
+    fetch('https://leadsagentapi-production.up.railway.app/api/home-stats')
       .then(r => r.json())
       .then(data => setStats(data))
       .catch(e => console.error("Error fetching home stats", e));

@@ -34,7 +34,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
       const inegiCat = { termino: 'ALL', ubicacion: 'General', catId: 'inegi_all', title: 'Todos los Leads de INEGI' };
       setExpandedCat(inegiCat);
       setLoadingLeads(true);
-      axios.get(`http://localhost:3001/api/leads/categorias/ALL/leads?dbMode=inegi`)
+      axios.get(`https://leadsagentapi-production.up.railway.app/api/leads/categorias/ALL/leads?dbMode=inegi`)
         .then(res => {
           setLeads(prev => ({ ...prev, inegi_all: res.data }));
           setLoading(false);
@@ -48,7 +48,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
 
   const fetchCategorias = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/api/leads/categorias?dbMode=${dbMode}`);
+      const res = await axios.get(`https://leadsagentapi-production.up.railway.app/api/leads/categorias?dbMode=${dbMode}`);
       setCategorias(res.data);
     } catch (error) {
       console.error(error);
@@ -67,7 +67,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
     setEmailProgress({ sent: 0, total: leadsToSend.length });
 
     try {
-      await axios.post('http://localhost:3001/api/campaigns/send', {
+      await axios.post('https://leadsagentapi-production.up.railway.app/api/campaigns/send', {
         leads: leadsToSend,
         asunto: emailSubject,
         cuerpo: emailBody,
@@ -108,7 +108,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
         pipelineState: 'CONTACTING'
       };
       
-      const res = await axios.post('http://localhost:3001/api/leads', newLead);
+      const res = await axios.post('https://leadsagentapi-production.up.railway.app/api/leads', newLead);
       
       // Añadir el nuevo lead a la vista actual
       setLeads(prev => ({
@@ -132,7 +132,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
     if (!leads[catId]) {
       setLoadingLeads(true);
       try {
-        const res = await axios.get(`http://localhost:3001/api/leads/categorias/${encodeURIComponent(cat.termino)}/leads?dbMode=${dbMode}&ubicacion=${encodeURIComponent(cat.ubicacion)}`);
+        const res = await axios.get(`https://leadsagentapi-production.up.railway.app/api/leads/categorias/${encodeURIComponent(cat.termino)}/leads?dbMode=${dbMode}&ubicacion=${encodeURIComponent(cat.ubicacion)}`);
         setLeads(prev => ({ ...prev, [catId]: res.data }));
       } catch (error) {
         console.error(error);
@@ -144,13 +144,13 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
 
   const handleDownload = (e) => {
     e.stopPropagation();
-    window.open(`http://localhost:3001/api/leads/exportar/${encodeURIComponent(expandedCat.termino)}?dbMode=${dbMode}&ubicacion=${encodeURIComponent(expandedCat.ubicacion)}`, '_blank');
+    window.open(`https://leadsagentapi-production.up.railway.app/api/leads/exportar/${encodeURIComponent(expandedCat.termino)}?dbMode=${dbMode}&ubicacion=${encodeURIComponent(expandedCat.ubicacion)}`, '_blank');
   };
 
   const toggleStatus = async (leadId, currentStatus, catId) => {
     const newStatus = currentStatus === 'discarded' ? 'active' : 'discarded';
     try {
-      await axios.patch(`http://localhost:3001/api/leads/${leadId}/status`, { status: newStatus });
+      await axios.patch(`https://leadsagentapi-production.up.railway.app/api/leads/${leadId}/status`, { status: newStatus });
       setLeads(prev => ({
         ...prev,
         [catId]: prev[catId].map(l => l.id === leadId ? { ...l, status: newStatus } : l)
@@ -162,7 +162,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
 
   const handleRegresar = async (leadId, catId) => {
     try {
-      await axios.delete(`http://localhost:3001/api/leads/${leadId}`);
+      await axios.delete(`https://leadsagentapi-production.up.railway.app/api/leads/${leadId}`);
       setLeads(prev => ({
         ...prev,
         [catId]: prev[catId].filter(l => l.id !== leadId)
@@ -196,7 +196,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
     }
 
     try {
-      await axios.patch(`http://localhost:3001/api/leads/${leadId}/contacto`, { contactoEstado: newState });
+      await axios.patch(`https://leadsagentapi-production.up.railway.app/api/leads/${leadId}/contacto`, { contactoEstado: newState });
       setLeads(prev => ({
         ...prev,
         [catId]: prev[catId].map(l => l.id === leadId ? { ...l, contactoEstado: newState } : l)
@@ -211,7 +211,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
     if (!window.confirm(`¿Seguro que quieres borrar la búsqueda "${cat.termino}" en "${cat.ubicacion}" para siempre?`)) return;
 
     try {
-      await axios.delete(`http://localhost:3001/api/leads/categorias/${encodeURIComponent(cat.termino)}?dbMode=${dbMode}&ubicacion=${encodeURIComponent(cat.ubicacion)}`);
+      await axios.delete(`https://leadsagentapi-production.up.railway.app/api/leads/categorias/${encodeURIComponent(cat.termino)}?dbMode=${dbMode}&ubicacion=${encodeURIComponent(cat.ubicacion)}`);
       setCategorias(prev => prev.filter(c => !(c.termino === cat.termino && c.ubicacion === cat.ubicacion)));
       if (expandedCat && expandedCat.termino === cat.termino && expandedCat.ubicacion === cat.ubicacion) {
         setExpandedCat(null);

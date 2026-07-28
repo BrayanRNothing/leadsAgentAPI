@@ -344,7 +344,7 @@ export default function ScrapingView({ onBack }) {
     setIsValidating(true);
     setValidationMessage('');
     try {
-      const { data } = await axios.post('http://localhost:3001/api/scraping/validate-query', { termino: term });
+      const { data } = await axios.post('https://leadsagentapi-production.up.railway.app/api/scraping/validate-query', { termino: term });
       if (data.valid) {
         setTermino(data.improved);
         setValidationMessage(data.message);
@@ -410,7 +410,7 @@ export default function ScrapingView({ onBack }) {
     if (reqFilters.website) params.reqWeb = 'true';
 
     const queryParams = new URLSearchParams(params).toString();
-    const eventSource = new EventSource(`http://localhost:3001/api/scraping/search-stream?${queryParams}`);
+    const eventSource = new EventSource(`https://leadsagentapi-production.up.railway.app/api/scraping/search-stream?${queryParams}`);
     eventSourceRef.current = eventSource;
 
     eventSource.addEventListener('connected', (e) => {
@@ -617,7 +617,7 @@ export default function ScrapingView({ onBack }) {
                   whileTap={{ scale: 0.96 }}
                   onClick={() => {
                     if (busquedaId) {
-                      window.open(`http://localhost:3001/api/leads/exportar/${busquedaId}`, '_blank');
+                      window.open(`https://leadsagentapi-production.up.railway.app/api/leads/exportar/${busquedaId}`, '_blank');
                     } else {
                       exportJSON();
                     }
@@ -1027,7 +1027,7 @@ export default function ScrapingView({ onBack }) {
             {results.length > 0 && !isScanning && (
               <div className="flex gap-1.5">
                 {busquedaId && (
-                  <a href={`http://localhost:3001/api/leads/exportar/${busquedaId}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black text-textMain uppercase tracking-wide transition-all" style={{ background: '#e0e5ec', boxShadow: '3px 3px 6px rgba(163,177,198,0.5),-3px -3px 6px rgba(255,255,255,0.8)' }}>
+                  <a href={`https://leadsagentapi-production.up.railway.app/api/leads/exportar/${busquedaId}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black text-textMain uppercase tracking-wide transition-all" style={{ background: '#e0e5ec', boxShadow: '3px 3px 6px rgba(163,177,198,0.5),-3px -3px 6px rgba(255,255,255,0.8)' }}>
                     <Download size={14} className="text-primary" /> Exportar CSV
                   </a>
                 )}
