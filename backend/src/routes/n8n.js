@@ -208,13 +208,12 @@ router.post('/webhooks/email-reply', async (req, res) => {
     });
 
     if (!lead) {
-      console.log('No se encontró lead asociado al correo:', cleanEmail, '| raw from:', from);
+      console.log('Ignorando correo (No es de un lead):', cleanEmail, '| raw from:', from);
       return res.json({ 
-        success: false, 
-        message: 'Lead no encontrado', 
-        searchedEmail: cleanEmail,
-        rawFromReceived: from,
-        bodyReceived: req.body
+        success: true, // Lo marcamos en true para que n8n no lo marque como error (probablemente es un correo que tú enviaste)
+        ignored: true,
+        message: 'Lead no encontrado (Probablemente un correo enviado por ti mismo). Ignorado correctamente.', 
+        searchedEmail: cleanEmail
       });
     }
 
