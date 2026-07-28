@@ -100,6 +100,19 @@ router.delete('/categorias/:termino', async (req, res) => {
   }
 });
 
+// Crear un lead manualmente
+router.post('/', async (req, res) => {
+  try {
+    const newLead = await prisma.lead.create({
+      data: req.body
+    });
+    res.json(newLead);
+  } catch (error) {
+    console.error('Error al crear lead manualmente:', error);
+    res.status(500).json({ error: 'Error al crear lead manualmente' });
+  }
+});
+
 // Cambiar el estado de un lead (Activo / Descartado)
 router.patch('/:id/status', async (req, res) => {
   const { id } = req.params;

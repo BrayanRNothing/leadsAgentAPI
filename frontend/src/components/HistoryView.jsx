@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Download, Mail, ArrowLeft, Phone, Globe, MapPin, Trash2, XCircle, CheckCircle, ExternalLink, Star } from 'lucide-react';
+import { Download, Mail, ArrowLeft, Phone, Globe, MapPin, Trash2, XCircle, CheckCircle, ExternalLink, Star, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function HistoryView({ onBack, dbMode = 'maps' }) {
@@ -18,6 +18,17 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailProgress, setEmailProgress] = useState(null);
 
+  // Manual Lead Modal states
+  const [showManualLeadModal, setShowManualLeadModal] = useState(false);
+  const [manualLeadForm, setManualLeadForm] = useState({
+    nombre: '',
+    correo: '',
+    telefono: '',
+    ubicacion: '',
+    categoria: '',
+    sitioWeb: ''
+  });
+  const [isSavingLead, setIsSavingLead] = useState(false);
   useEffect(() => {
     if (dbMode === 'inegi') {
       const inegiCat = { termino: 'ALL', ubicacion: 'General', catId: 'inegi_all', title: 'Todos los Leads de INEGI' };
@@ -80,6 +91,38 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
       alert("Error al iniciar la campaña");
       setIsSendingEmail(false);
       setEmailProgress(null);
+    }
+  };
+
+  const handleSaveManualLead = async () => {
+    if (!manualLeadForm.nombre) return alert('El nombre es obligatorio');
+    
+    setIsSavingLead(true);
+    try {
+      const newLead = {
+        ...manualLeadForm,
+        fuente: dbMode === 'inegi' ? 'inegi_saved' : 'manual',
+        terminoBusqueda: expandedCat.termino,
+        ubicacion: expandedCat.ubicacion === 'General' ? null : expandedCat.ubicacion,
+        status: 'active',
+        pipelineState: 'CONTACTING'
+      };
+      
+      const res = await axios.post('http://localhost:3001/api/leads', newLead);
+      
+      // Añadir el nuevo lead a la vista actual
+      setLeads(prev => ({
+        ...prev,
+        [expandedCat.catId]: [res.data, ...(prev[expandedCat.catId] || [])]
+      }));
+      
+      setShowManualLeadModal(false);
+      setManualLeadForm({ nombre: '', correo: '', telefono: '', ubicacion: '', categoria: '', sitioWeb: '' });
+    } catch (error) {
+      console.error(error);
+      alert('Error al guardar lead manual');
+    } finally {
+      setIsSavingLead(false);
     }
   };
 
@@ -272,6 +315,13 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
                     </div>
 
                     <div className="flex gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowManualLeadModal(true); }}
+                        className="w-10 h-10 flex items-center justify-center text-teal-600 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[4px_4px_8px_rgba(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]"
+                        title="Agregar Lead Manualmente"
+                      >
+                        <span className="text-xl font-bold">+</span>
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowEmailModal(true); }}
                         className="w-10 h-10 flex items-center justify-center text-purple-600 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[4px_4px_8px_rgba(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]"
@@ -551,6 +601,63 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
                   Lanzar Campaña
                 </button>
               )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Lead Manual */}
+      {showManualLeadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-lg rounded-3xl p-8 relative shadow-2xl"
+            style={{ background: '#e0e5ec' }}
+          >
+            <button onClick={() => !isSavingLead && setShowManualLeadModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 transition-colors">
+              <XCircle size={24} />
+            </button>
+            <h3 className="text-2xl font-black text-gray-800 mb-6 flex items-center gap-3">
+              <div className="p-3 bg-teal-100 rounded-xl text-teal-600">
+                <Users size={24} />
+              </div>
+              Agregar Lead
+            </h3>
+
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-600 mb-1 pl-1">Nombre / Empresa *</label>
+                <input type="text" value={manualLeadForm.nombre} onChange={(e) => setManualLeadForm(f => ({...f, nombre: e.target.value}))} disabled={isSavingLead} className="w-full px-4 py-2 rounded-xl bg-[#e0e5ec] outline-none text-gray-800 font-medium shadow-[inset_3px_3px_6px_rgba(163,177,198,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.8)]" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1 pl-1">Correo</label>
+                  <input type="email" value={manualLeadForm.correo} onChange={(e) => setManualLeadForm(f => ({...f, correo: e.target.value}))} disabled={isSavingLead} className="w-full px-4 py-2 rounded-xl bg-[#e0e5ec] outline-none text-gray-800 font-medium shadow-[inset_3px_3px_6px_rgba(163,177,198,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.8)]" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1 pl-1">Teléfono</label>
+                  <input type="text" value={manualLeadForm.telefono} onChange={(e) => setManualLeadForm(f => ({...f, telefono: e.target.value}))} disabled={isSavingLead} className="w-full px-4 py-2 rounded-xl bg-[#e0e5ec] outline-none text-gray-800 font-medium shadow-[inset_3px_3px_6px_rgba(163,177,198,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.8)]" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1 pl-1">Categoría / Giro</label>
+                  <input type="text" value={manualLeadForm.categoria} onChange={(e) => setManualLeadForm(f => ({...f, categoria: e.target.value}))} disabled={isSavingLead} className="w-full px-4 py-2 rounded-xl bg-[#e0e5ec] outline-none text-gray-800 font-medium shadow-[inset_3px_3px_6px_rgba(163,177,198,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.8)]" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1 pl-1">Sitio Web</label>
+                  <input type="text" value={manualLeadForm.sitioWeb} onChange={(e) => setManualLeadForm(f => ({...f, sitioWeb: e.target.value}))} disabled={isSavingLead} className="w-full px-4 py-2 rounded-xl bg-[#e0e5ec] outline-none text-gray-800 font-medium shadow-[inset_3px_3px_6px_rgba(163,177,198,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.8)]" />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveManualLead}
+                disabled={isSavingLead}
+                className="mt-4 w-full py-4 rounded-2xl font-black text-white bg-teal-500 hover:bg-teal-600 transition-all shadow-[0_8px_20px_rgba(20,184,166,0.4)] hover:-translate-y-1 flex justify-center items-center gap-2 text-lg disabled:opacity-50"
+              >
+                {isSavingLead ? 'Guardando...' : 'Guardar Lead'}
+              </button>
             </div>
           </motion.div>
         </div>
