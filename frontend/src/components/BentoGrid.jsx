@@ -231,7 +231,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
   };
 
   return (
-    <div className="relative w-full max-w-xl flex flex-col items-center justify-center min-h-screen py-10 px-4">
+    <div className="relative w-full flex flex-col items-center justify-center min-h-screen py-10 px-4">
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={
@@ -246,7 +246,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
               <div className="flex flex-col w-full max-w-4xl mx-auto relative z-20 mb-32 pb-10 px-2 sm:px-4 mt-8 pt-10">
 
                 {/* Esquina Superior Derecha: Maps */}
-                <div className="absolute top-2 right-4 flex flex-col gap-3 z-30">
+                <div className="fixed top-6 right-6 flex flex-col gap-3 z-50">
                   <motion.div
                     role="button"
                     onClick={() => navigate('/search')}
