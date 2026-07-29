@@ -138,10 +138,14 @@ model AutoPilotConfig {
   phase3Active    Boolean  @default(false) // Clasificación IA y Auto-Respuesta
 
   // Configuración de Envío
-  batchSize       Int      @default(50)
-  delaySeconds    Int      @default(30)
-  templateSubject String   @default("Mantenimiento y Recubrimiento Anticorrosivo HVAC")
-  templateHtml    String   @default("<h1>Hola, {{nombre_empresa}}</h1><p>Somos Infiniguard, especialistas en recubrimiento anticorrosivo y mantenimiento para sistemas HVAC...</p>")
+  batchSize           Int      @default(50)
+  delaySeconds        Int      @default(30)
+  dailyLimit          Int      @default(200)    // Máximo de correos a enviar por día
+  batchCooldownHours  Float    @default(4)      // Horas de espera entre lotes (ej. 4 horas)
+  sentTodayCount      Int      @default(0)      // Contador de correos enviados hoy
+  sentTodayDate       String?                   // Fecha del último reset (YYYY-MM-DD)
+  templateSubject     String   @default("Mantenimiento y Recubrimiento Anticorrosivo HVAC")
+  templateHtml        String   @default("<h1>Hola, {{nombre_empresa}}</h1><p>Somos Infiniguard, especialistas en recubrimiento anticorrosivo y mantenimiento para sistemas HVAC...</p>")
 
   // Perfil de empresa para que la IA tenga contexto
   companyName     String   @default("Infiniguard")

@@ -25,7 +25,8 @@ router.put('/config', async (req, res) => {
   try {
     const {
       globalActive, phase1Active, phase2Active, phase3Active,
-      batchSize, delaySeconds, templateSubject, templateHtml,
+      batchSize, delaySeconds, dailyLimit, batchCooldownHours,
+      templateSubject, templateHtml,
       companyName, companyContext, availability, notifyEmail
     } = req.body;
 
@@ -36,6 +37,8 @@ router.put('/config', async (req, res) => {
       phase3Active: !!phase3Active,
       batchSize: parseInt(batchSize) || 50,
       delaySeconds: parseInt(delaySeconds) || 30,
+      dailyLimit: parseInt(dailyLimit) || 200,
+      batchCooldownHours: parseFloat(batchCooldownHours) || 4,
       templateSubject: templateSubject || '',
       templateHtml: templateHtml || '',
       companyName: companyName || 'Infiniguard',

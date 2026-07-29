@@ -101,66 +101,70 @@ router.post('/mark-sent', async (req, res) => {
 
 const { Groq } = require('groq-sdk');
 
-async function analyzeEmailWithAI(text, leadInfo) {
+async function analyzeEmailWithAI(text, leadInfo, config) {
   if (!process.env.GROQ_API_KEY) {
-    console.error('❌ Error: GROQ_API_KEY no está configurada. Saltando análisis de IA.');
+    console.error('❌ Error: GROQ_API_KEY no configurada. Saltando análisis.');
     return null;
   }
   
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  
-  try {
-    // Aquí puedes editar la información de tu negocio para que la IA la sepa responder.
-    const knowledgeBase = {
-      nombre_empresa: "Tu Agencia / Servicio",
-      servicios: ["Marketing Digital", "Desarrollo Web", "Automatizaciones"],
-      contacto_ventas: "cesar.zd@gmail.com",
-      link_calendly: "https://calendly.com/tu-usuario/reunion-30-min",
-      info_extra: "Ofrecemos asesoría gratuita inicial. Precios a la medida según requerimientos."
-    };
 
-    const prompt = `Eres un experto asistente de ventas. Tu trabajo es analizar la nueva respuesta de un cliente potencial a nuestro correo de prospección.
-El nombre del lead es: ${leadInfo.nombre}
-Su término de búsqueda (giro) es: ${leadInfo.terminoBusqueda || 'No especificado'}
+  // Usa el perfil de empresa guardado en la BD o valores por defecto
+  const knowledgeBase = {
+    nombre_empresa: config?.companyName || 'Infiniguard',
+    descripcion: config?.companyContext || 'Especialistas en recubrimiento anticorrosivo y mantenimiento HVAC.',
+    disponibilidad: config?.availability || 'Lunes a Viernes 9am-6pm',
+    contacto_ventas: config?.notifyEmail || '',
+  };
 
-INFORMACIÓN DE TU EMPRESA (Úsala para responder dudas):
-${JSON.stringify(knowledgeBase, null, 2)}
+  const prompt = `Eres un asistente de ventas experto de ${knowledgeBase.nombre_empresa}.
+Tu empresa: ${knowledgeBase.descripcion}
+Disponibilidad para citas: ${knowledgeBase.disponibilidad}
 
-ATENCIÓN: El correo suele incluir el historial de los mensajes anteriores en la parte inferior (por ejemplo, después de fechas, "escribió:" o "wrote:"). 
-DEBES IGNORAR COMPLETAMENTE el correo original. Concéntrate EXCLUSIVAMENTE en lo que el cliente acaba de responder (las primeras líneas del mensaje).
+ATENCIÓN: El correo suele incluir el historial de mensajes anteriores. IGNORA todo después de "El ... escribió:", "On ... wrote:" o "---". Analiza SOLO lo que el cliente acaba de escribir.
 
 Respuesta del cliente:
 "${text}"
 
-Clasifica la intención de LA NUEVA RESPUESTA del cliente en una de estas categorías:
-1. "INTERESTED": Muestra interés claro en el producto/servicio.
-2. "NOT_INTERESTED": Pide que dejen de molestar o dice que no le interesa.
-3. "DOUBT": Hace una pregunta sobre el servicio o precio antes de decidir.
-4. "MEETING": Pide agendar una llamada o cita.
+Clasifica en UNA de estas categorías:
+1. "INTERESTED" - Muestra interés claro
+2. "NOT_INTERESTED" - Dice que no le interesa
+3. "DOUBT" - Hace pregunta sobre el servicio antes de decidir
+4. "MEETING" - Pide agendar cita o llamada
+5. "REQUIRES_HUMAN" - Pregunta técnica compleja o caso especial que necesita intervención humana
+6. "INVALID" - Correo de respuesta automática, rebote, fuera de oficina o SPAM
 
-Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (sin formato Markdown adicional):
+Responde ÚNICAMENTE con JSON válido (sin markdown):
 {
-  "classification": "una de las 4 categorias",
-  "reasoning": "breve justificación de tu decisión",
-  "suggested_reply": "Si es INTERESTED o DOUBT, redacta la respuesta ideal usando la información de la empresa. Si es MEETING, redacta un correo que sugiera un horario, incluya el enlace de Calendly y pida amablemente confirmar poniendo en copia (CC) a cesar.zd@gmail.com. Si es NOT_INTERESTED, déjalo vacío."
+  "classification": "una de las 6 categorias",
+  "reasoning": "breve justificacion",
+  "suggested_reply": "si es INTERESTED, DOUBT o MEETING, redacta la respuesta ideal usando info de la empresa. Si es NOT_INTERESTED, INVALID o REQUIRES_HUMAN, dejar vacio."
 }`;
 
+  try {
     const completion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "llama-3.1-8b-instant", // Modelo actualizado (el anterior fue descontinuado por Groq)
-      temperature: 0.1, // Baja temperatura para respuestas más predecibles
-      response_format: { type: "json_object" }
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.1,
+      response_format: { type: 'json_object' }
     });
 
     if (!global.aiTokensUsed) global.aiTokensUsed = 0;
-    if (completion.usage && completion.usage.total_tokens) {
+    if (completion.usage?.total_tokens) {
       global.aiTokensUsed += completion.usage.total_tokens;
     }
 
-    const result = JSON.parse(completion.choices[0].message.content);
-    return result;
+    return JSON.parse(completion.choices[0].message.content);
   } catch (error) {
-    console.error('Error analizando con Groq:', error);
+    // Detectar si el error es por tokens agotados (rate limit de Groq)
+    const isRateLimit = error?.status === 429 || error?.message?.includes('rate_limit') || error?.message?.includes('quota');
+    if (isRateLimit) {
+      console.warn('⏸️ Tokens de Groq agotados. La IA pausará hasta que se rellenen. El lead quedará como REPLIED.');
+      // Marcar en un global para que el sistema lo muestre en la UI
+      global.aiPaused = { paused: true, reason: 'tokens_exhausted', since: new Date().toISOString() };
+    } else {
+      console.error('Error analizando con Groq:', error);
+    }
     return null;
   }
 }
@@ -217,9 +221,16 @@ router.post('/webhooks/email-reply', async (req, res) => {
       });
     }
 
-    // Análisis de la IA (Groq)
-    console.log(`🤖 Analizando respuesta del lead ${lead.nombre} con IA...`);
-    const aiAnalysis = await analyzeEmailWithAI(text, lead);
+    // Análisis de la IA (Groq) — solo si Fase 3 activa
+    const autopilotConfig = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
+    const phase3Active = autopilotConfig?.phase3Active && autopilotConfig?.globalActive;
+
+    console.log(`🤖 Analizando respuesta del lead ${lead.nombre} con IA... (Fase 3 activa: ${phase3Active})`);
+    
+    let aiAnalysis = null;
+    if (phase3Active) {
+      aiAnalysis = await analyzeEmailWithAI(text, lead, autopilotConfig);
+    }
     
     let nextState = 'REPLIED';
     
@@ -227,28 +238,21 @@ router.post('/webhooks/email-reply', async (req, res) => {
       console.log('🧠 Resultado de IA:', aiAnalysis.classification);
       
       switch (aiAnalysis.classification) {
-        case 'INTERESTED':
-          nextState = 'INTERESTED';
-          break;
-        case 'NOT_INTERESTED':
-          nextState = 'NOT_INTERESTED'; // Lo descartamos
-          break;
-        case 'DOUBT':
-          nextState = 'REPLIED'; // Sigue en espera de atención o respuesta automática
-          break;
-        case 'MEETING':
-          nextState = 'INTERESTED'; // Cita agendada
-          break;
+        case 'INTERESTED': nextState = 'INTERESTED'; break;
+        case 'NOT_INTERESTED': nextState = 'NOT_INTERESTED'; break;
+        case 'DOUBT': nextState = 'REPLIED'; break;
+        case 'MEETING': nextState = 'MEETING_BOOKED'; break;
+        case 'REQUIRES_HUMAN': nextState = 'REQUIRES_HUMAN'; break;
+        case 'INVALID': nextState = 'INVALID'; break;
+        default: nextState = 'REPLIED';
       }
     }
 
-    // Obtener estado de contacto actual o inicializarlo
     let contactoActual = {};
     if (lead.contactoEstado) {
       contactoActual = typeof lead.contactoEstado === 'string' ? JSON.parse(lead.contactoEstado) : lead.contactoEstado;
     }
 
-    // Actualizar estado del lead en la BD
     await prisma.lead.update({
       where: { id: lead.id },
       data: { 
@@ -262,7 +266,17 @@ router.post('/webhooks/email-reply', async (req, res) => {
       }
     });
 
-    console.log(`✅ Lead ${lead.nombre} actualizado a estado: ${nextState}.`);
+    // Guardar en historial de correos
+    await prisma.emailMessage.create({
+      data: {
+        leadId: lead.id,
+        isIncoming: true,
+        subject: subject || '(Sin asunto)',
+        bodyText: cleanEmailText(text)
+      }
+    });
+
+    console.log(`✅ Lead ${lead.nombre} -> ${nextState}. Historial guardado.`);
 
     // TODO: Si la IA sugirió una respuesta y queremos enviarla en automático, 
     // tendríamos que hacer un POST al Webhook de n8n aquí pasando el suggested_reply y threadId.
