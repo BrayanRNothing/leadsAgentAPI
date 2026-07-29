@@ -136,79 +136,102 @@ export default function AutoPilotView({ onBack }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* CONFIGURACION DE ENVIO (FASE 1 Y 2) */}
-          <div className="p-5 rounded-2xl flex flex-col gap-4" style={{ background: "#e0e5ec", boxShadow: nf }}>
-            <h3 className="text-sm font-bold text-gray-800 border-b border-gray-300 pb-2 flex items-center gap-2"><Send size={16}/> Parametros de Envio (Fase 1 y 2)</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-gray-700">Leads por lote</label>
-                <input type="number" required min="10" max="200" value={config.batchSize} onChange={e => setConfig({ ...config, batchSize: e.target.value })}
-                  className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-gray-700">Espera entre envios (seg)</label>
-                <input type="number" required min="5" max="300" value={config.delaySeconds} onChange={e => setConfig({ ...config, delaySeconds: e.target.value })}
-                  className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-indigo-600">Limite diario</label>
-                <input type="number" required min="10" max="5000" value={config.dailyLimit || 200} onChange={e => setConfig({ ...config, dailyLimit: e.target.value })}
-                  className="w-full bg-transparent border-none outline-none text-indigo-700 font-bold text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-amber-600">Cooldown entre lotes (hrs)</label>
-                <input type="number" required min="0.5" max="24" step="0.5" value={config.batchCooldownHours || 4} onChange={e => setConfig({ ...config, batchCooldownHours: e.target.value })}
-                  className="w-full bg-transparent border-none outline-none text-amber-700 font-bold text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
-              </div>
-            </div>
-            {config.dailyLimit && config.sentTodayCount !== undefined && (
-              <div className="flex items-center gap-3 p-2 rounded-xl" style={{ boxShadow: ni }}>
-                <div className="flex-1 bg-gray-300 rounded-full h-2 overflow-hidden">
-                  <div className="h-2 rounded-full bg-indigo-500 transition-all"
-                    style={{ width: `${Math.min(100, (config.sentTodayCount / config.dailyLimit) * 100)}%` }} />
+        {/* SECCION INFERIOR: CONFIGURACIONES */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          
+          {/* COLUMNA IZQUIERDA */}
+          <div className="flex flex-col gap-6">
+            
+            {/* PARAMETROS DE ENVIO */}
+            <div className="p-5 rounded-2xl flex flex-col gap-4" style={{ background: "#e0e5ec", boxShadow: nf }}>
+              <h3 className="text-sm font-bold text-gray-800 border-b border-gray-300 pb-2 flex items-center gap-2"><Send size={16}/> Parametros de Envio (Fase 1 y 2)</h3>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-gray-700">Lote (leads)</label>
+                  <input type="number" required min="10" max="200" value={config.batchSize} onChange={e => setConfig({ ...config, batchSize: e.target.value })}
+                    className="w-full bg-transparent border-none outline-none text-gray-800 font-bold text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-600 shrink-0">
-                  {config.sentTodayCount || 0} / {config.dailyLimit} hoy
-                </span>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-gray-700">Espera (seg)</label>
+                  <input type="number" required min="5" max="300" value={config.delaySeconds} onChange={e => setConfig({ ...config, delaySeconds: e.target.value })}
+                    className="w-full bg-transparent border-none outline-none text-gray-800 font-bold text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-indigo-600">Limite / dia</label>
+                  <input type="number" required min="10" max="5000" value={config.dailyLimit || 200} onChange={e => setConfig({ ...config, dailyLimit: e.target.value })}
+                    className="w-full bg-transparent border-none outline-none text-indigo-700 font-bold text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-amber-600">Cooldown (h)</label>
+                  <input type="number" required min="0.5" max="24" step="0.5" value={config.batchCooldownHours || 4} onChange={e => setConfig({ ...config, batchCooldownHours: e.target.value })}
+                    className="w-full bg-transparent border-none outline-none text-amber-700 font-bold text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
+                </div>
               </div>
-            )}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700">Asunto del Correo</label>
-              <input type="text" required value={config.templateSubject} onChange={e => setConfig({ ...config, templateSubject: e.target.value })}
-                className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
+
+              {config.dailyLimit && config.sentTodayCount !== undefined && (
+                <div className="flex items-center gap-3 p-3 rounded-xl mt-1" style={{ boxShadow: ni }}>
+                  <div className="flex-1 bg-gray-300 rounded-full h-2 overflow-hidden">
+                    <div className="h-2 rounded-full bg-indigo-500 transition-all"
+                      style={{ width: `${Math.min(100, (config.sentTodayCount / config.dailyLimit) * 100)}%` }} />
+                  </div>
+                  <span className="text-[11px] font-bold text-gray-600 shrink-0">
+                    {config.sentTodayCount || 0} / {config.dailyLimit} hoy
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700">Cuerpo del Correo (HTML)</label>
-              <textarea required rows="6" value={config.templateHtml} onChange={e => setConfig({ ...config, templateHtml: e.target.value })}
-                className="w-full bg-transparent border-none outline-none text-gray-800 font-mono text-[10px] px-3 py-3 rounded-xl resize-y" style={{ boxShadow: ni }} />
+
+            {/* PLANTILLA DE CORREO */}
+            <div className="p-5 rounded-2xl flex flex-col gap-4 flex-1" style={{ background: "#e0e5ec", boxShadow: nf }}>
+              <h3 className="text-sm font-bold text-gray-800 border-b border-gray-300 pb-2 flex items-center gap-2">Plantilla del Correo</h3>
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-700">Asunto del Correo</label>
+                <input type="text" required value={config.templateSubject} onChange={e => setConfig({ ...config, templateSubject: e.target.value })}
+                  className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-sm px-4 py-3 rounded-xl" style={{ boxShadow: ni }} />
+              </div>
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-xs font-bold text-gray-700">Cuerpo del Correo (Soporta HTML)</label>
+                <textarea required value={config.templateHtml} onChange={e => setConfig({ ...config, templateHtml: e.target.value })}
+                  className="w-full h-48 sm:h-full bg-transparent border-none outline-none text-gray-800 font-medium text-sm px-4 py-3 rounded-xl resize-none" style={{ boxShadow: ni }} />
+              </div>
+            </div>
+
+          </div>
+
+          {/* COLUMNA DERECHA */}
+          <div className="flex flex-col gap-6">
+            {/* CONOCIMIENTO DE LA IA */}
+            <div className="p-5 rounded-2xl flex flex-col gap-4 h-full" style={{ background: "#e0e5ec", boxShadow: nf }}>
+              <h3 className="text-sm font-bold text-gray-800 border-b border-gray-300 pb-2 flex items-center gap-2"><Bot size={16}/> Conocimiento de la IA (Fase 3)</h3>
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-700">Nombre de la Empresa</label>
+                <input type="text" required value={config.companyName} onChange={e => setConfig({ ...config, companyName: e.target.value })}
+                  className="w-full bg-transparent border-none outline-none text-gray-800 font-bold text-sm px-4 py-3 rounded-xl" style={{ boxShadow: ni }} />
+              </div>
+
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-xs font-bold text-gray-700">Servicios y Respuestas a Preguntas (FAQ)</label>
+                <textarea required value={config.companyContext} onChange={e => setConfig({ ...config, companyContext: e.target.value })}
+                  className="w-full h-32 sm:h-full bg-transparent border-none outline-none text-gray-800 font-medium text-sm px-4 py-3 rounded-xl resize-none" style={{ boxShadow: ni }} />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-700">Disponibilidad para Citas (Ej. Horarios y link de Calendly)</label>
+                <textarea value={config.availability} onChange={e => setConfig({ ...config, availability: e.target.value })}
+                  className="w-full h-20 bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-4 py-3 rounded-xl resize-none" style={{ boxShadow: ni }} />
+              </div>
+
+              <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-300">
+                <label className="text-xs font-bold text-gray-700 flex items-center gap-1"><Mail size={12}/> Alertas al Jefe (Opcional)</label>
+                <input type="email" placeholder="jefe@empresa.com" value={config.notifyEmail || ''} onChange={e => setConfig({ ...config, notifyEmail: e.target.value })}
+                  className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-sm px-4 py-3 rounded-xl" style={{ boxShadow: ni }} />
+              </div>
             </div>
           </div>
 
-          {/* PERFIL EMPRESA Y NOTIFICACIONES (FASE 3) */}
-          <div className="p-5 rounded-2xl flex flex-col gap-4" style={{ background: "#e0e5ec", boxShadow: nf }}>
-            <h3 className="text-sm font-bold text-gray-800 border-b border-gray-300 pb-2 flex items-center gap-2"><Building2 size={16}/> Conocimiento de la IA (Fase 3)</h3>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700">Nombre de la Empresa</label>
-              <input type="text" value={config.companyName || ""} onChange={e => setConfig({ ...config, companyName: e.target.value })}
-                className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700">Servicios y Respuestas a Preguntas (FAQ)</label>
-              <textarea rows="4" value={config.companyContext || ""} onChange={e => setConfig({ ...config, companyContext: e.target.value })}
-                className="w-full bg-transparent border-none outline-none text-gray-800 text-[10px] px-3 py-3 rounded-xl resize-y" style={{ boxShadow: ni }} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700">Disponibilidad para Citas</label>
-              <textarea rows="2" value={config.availability || ""} onChange={e => setConfig({ ...config, availability: e.target.value })}
-                className="w-full bg-transparent border-none outline-none text-gray-800 text-[10px] px-3 py-3 rounded-xl resize-y" style={{ boxShadow: ni }} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700 text-indigo-700 flex items-center gap-1"><Mail size={12}/> Alertas al Jefe</label>
-              <input type="email" placeholder="jefe@empresa.com" value={config.notifyEmail || ""} onChange={e => setConfig({ ...config, notifyEmail: e.target.value })}
-                className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-3 py-2 rounded-xl" style={{ boxShadow: ni }} />
-            </div>
-          </div>
         </div>
 
         {/* CONTROLES FINALES */}
