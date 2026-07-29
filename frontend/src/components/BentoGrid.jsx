@@ -112,7 +112,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
   const location = useLocation();
   const [stats, setStats] = useState({ mapsLeads: 0, inegiLeads: 0 });
   const [aiStats, setAiStats] = useState({ usedTokens: 0, maxTokens: 500000 });
-  const [autoPilotActive, setAutoPilotActive] = useState(false);
+  const [autoPilotConfig, setAutoPilotConfig] = useState(null);
 
   React.useEffect(() => {
     fetch('https://leadsagentapi-production.up.railway.app/api/home-stats')
@@ -128,7 +128,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
     const checkBot = () => {
       fetch('https://leadsagentapi-production.up.railway.app/api/autopilot/config')
         .then(r => r.json())
-        .then(d => setAutoPilotActive(d.isActive))
+        .then(d => setAutoPilotConfig(d))
         .catch(e => console.error(e));
     };
     checkBot();
@@ -195,8 +195,8 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
     </motion.div>
   );
 
-  const AnimatedBotVisualizer = ({ isActive }) => {
-    if (!isActive) return null;
+  const AnimatedBotVisualizer = ({ config }) => {
+    if (!config || !config.globalActive) return null;
     return (
       <motion.div 
         initial={{ opacity: 0, height: 0 }}
@@ -209,22 +209,37 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
       >
         <div className="flex items-center gap-2 text-indigo-600 mb-2">
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></div>
-          <span className="text-xs font-black uppercase tracking-widest">Bot Analizando Leads...</span>
+          <span className="text-[11px] font-black uppercase tracking-widest">Bot Ejecutando Tareas...</span>
         </div>
         
         <div className="flex flex-col gap-2 font-mono text-[10px] sm:text-xs text-gray-700">
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 2.5 }}>
-            {'>'} Buscando leads en INEGI... [OK]
-          </motion.div>
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 2.5, delay: 0.6 }}>
-            {'>'} Separando leads y pasando a En Proceso... [OK]
-          </motion.div>
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 2.5, delay: 1.2 }}>
-            {'>'} Redactando correo personalizado... [OK]
-          </motion.div>
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 2.5, delay: 1.8 }} className="text-green-600 font-bold">
-            {'>'} Correo enviado exitosamente. Esperando delay...
-          </motion.div>
+          {config.phase1Active && (
+            <>
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3 }}>
+                <span className="text-blue-500 font-bold">[Fase 1]</span> Buscando leads calificados en INEGI...
+              </motion.div>
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3, delay: 0.8 }} className="text-gray-500">
+                {'>'} Leads enviados a "En Proceso" [OK]
+              </motion.div>
+            </>
+          )}
+
+          {config.phase2Active && (
+            <>
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3, delay: 1.6 }}>
+                <span className="text-indigo-500 font-bold">[Fase 2]</span> n8n procesando envíos en lote...
+              </motion.div>
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3, delay: 2.4 }} className="text-green-600 font-bold">
+                {'>'} Correo enviado con éxito. Respetando cooldown...
+              </motion.div>
+            </>
+          )}
+
+          {config.phase3Active && (
+            <motion.div initial={{ opacity: 0.5 }} animate={{ opacity: 1 }} transition={{ repeat: Infinity, duration: 1.5, direction: "reverse" }} className="mt-1">
+              <span className="text-amber-500 font-bold">[Fase 3]</span> 🤖 IA a la escucha de nuevas respuestas en bandeja...
+            </motion.div>
+          )}
         </div>
       </motion.div>
     );
@@ -327,28 +342,28 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                       transition={{ delay: 0.8 }}
                       className="flex items-center justify-center gap-4 px-6 py-4 rounded-3xl cursor-pointer hover:scale-105 active:scale-95 transition-all relative group"
                       style={{
-                        background: autoPilotActive ? 'linear-gradient(145deg, #10b981, #059669)' : '#e0e5ec',
-                        boxShadow: autoPilotActive 
+                        background: autoPilotConfig?.globalActive ? 'linear-gradient(145deg, #10b981, #059669)' : '#e0e5ec',
+                        boxShadow: autoPilotConfig?.globalActive 
                           ? '0 10px 20px rgba(16, 185, 129, 0.4), inset 2px 2px 5px rgba(255,255,255,0.3)'
                           : '6px 6px 12px rgba(163,177,198,0.5), -6px -6px 12px rgba(255,255,255,0.9)'
                       }}
                     >
-                      <div className={`p-2 rounded-full ${autoPilotActive ? 'bg-white bg-opacity-20' : 'bg-indigo-100'}`}>
-                        <Play size={20} color={autoPilotActive ? '#fff' : '#4f46e5'} className={autoPilotActive ? 'animate-pulse' : ''} />
+                      <div className={`p-2 rounded-full ${autoPilotConfig?.globalActive ? 'bg-white bg-opacity-20' : 'bg-indigo-100'}`}>
+                        <Play size={20} color={autoPilotConfig?.globalActive ? '#fff' : '#4f46e5'} className={autoPilotConfig?.globalActive ? 'animate-pulse' : ''} />
                       </div>
                       <div className="flex flex-col">
-                        <span className={`text-sm font-black ${autoPilotActive ? 'text-white' : 'text-gray-800'}`}>
+                        <span className={`text-sm font-black ${autoPilotConfig?.globalActive ? 'text-white' : 'text-gray-800'}`}>
                           Configurar Auto-Piloto
                         </span>
-                        <span className={`text-[10px] font-bold ${autoPilotActive ? 'text-green-100' : 'text-gray-500'}`}>
-                          {autoPilotActive ? 'ACTIVO - Procesando Leads' : 'Clic para abrir'}
+                        <span className={`text-[10px] font-bold ${autoPilotConfig?.globalActive ? 'text-green-100' : 'text-gray-500'}`}>
+                          {autoPilotConfig?.globalActive ? 'ACTIVO - Procesando Leads' : 'Clic para abrir'}
                         </span>
                       </div>
                     </motion.div>
 
                     {/* Animación visual del bot trabajando */}
                     <div className="w-full max-w-md">
-                      <AnimatedBotVisualizer isActive={autoPilotActive} />
+                      <AnimatedBotVisualizer config={autoPilotConfig} />
                     </div>
                   </div>
 
