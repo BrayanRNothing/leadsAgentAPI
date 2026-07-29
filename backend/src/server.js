@@ -4,6 +4,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const scrapingRoutes = require('./routes/scraping');
 const leadsRoutes = require('./routes/leads');
+const gmailRoutes = require('./routes/gmail');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/inegi', require('./routes/inegi'));
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/n8n', require('./routes/n8n'));
 app.use('/api/autopilot', require('./routes/autopilot'));
+app.use('/api/gmail', require('./routes/gmail'));
 
 app.get('/api/ai-stats', (req, res) => {
   res.json({

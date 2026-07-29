@@ -18,6 +18,9 @@ enum PipelineState {
   NOT_INTERESTED
   FOLLOW_UP
   DISCARDED
+  REQUIRES_HUMAN
+  MEETING_BOOKED
+  INVALID
 }
 
 model Usuario {
@@ -49,6 +52,20 @@ model Lead {
 
   // Relación con mensajes enviados
   mensajes LeadMensaje[]
+  
+  // Historial de la conversación por correo
+  correos  EmailMessage[]
+}
+
+model EmailMessage {
+  id          Int      @id @default(autoincrement())
+  leadId      Int
+  isIncoming  Boolean  @default(false) // true si es una respuesta del cliente, false si lo mandó el bot
+  subject     String?
+  bodyText    String
+  sentAt      DateTime @default(now())
+  
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 }
 
 model CampanaCorreo {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Save, AlertCircle, Database, Send, BotMessageSquare, Building2, Mail, Power, Settings } from "lucide-react";
 
 const API = "https://leadsagentapi-production.up.railway.app";
@@ -8,6 +8,7 @@ export default function AutoPilotView({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [gmailConnected, setGmailConnected] = useState(false);
 
   useEffect(() => { fetchConfig(); }, []);
 
@@ -15,8 +16,29 @@ export default function AutoPilotView({ onBack }) {
     try {
       const res = await fetch(`${API}/api/autopilot/config`);
       setConfig(await res.json());
+
+      const gmailRes = await fetch(`${API}/api/gmail/status`);
+      const gmailData = await gmailRes.json();
+      setGmailConnected(gmailData.isConnected);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  };
+
+  const connectGmail = async () => {
+    try {
+      const res = await fetch(`${API}/api/gmail/auth`);
+      const data = await res.json();
+      if (data.url) window.open(data.url, '_blank');
+      else setFeedback({ type: 'error', msg: data.error || 'Error al conectar' });
+    } catch (err) { setFeedback({ type: 'error', msg: 'Error al conectar' }); }
+  };
+
+  const disconnectGmail = async () => {
+    try {
+      await fetch(`${API}/api/gmail/disconnect`, { method: 'POST' });
+      setGmailConnected(false);
+      setFeedback({ type: 'success', msg: 'Gmail desconectado' });
+    } catch (err) { setFeedback({ type: 'error', msg: 'Error al desconectar' }); }
   };
 
   const handleSave = async (e) => {
@@ -170,9 +192,18 @@ export default function AutoPilotView({ onBack }) {
 
         {/* CONTROLES FINALES */}
         <div className="flex items-center justify-between">
-          <button type="button" disabled className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-gray-400 cursor-not-allowed" style={{ background: "#e0e5ec", boxShadow: nf }}>
-            <Mail size={14} /> Conectar Gmail (OAuth)
-          </button>
+          <div className="flex items-center gap-2">
+            {!gmailConnected ? (
+              <button type="button" onClick={connectGmail} className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-blue-600 hover:text-blue-700 transition-all active:scale-95" style={{ background: "#e0e5ec", boxShadow: nf }}>
+                <Mail size={14} /> Conectar Gmail (OAuth)
+              </button>
+            ) : (
+              <button type="button" onClick={disconnectGmail} className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:text-red-700 transition-all active:scale-95" style={{ background: "#e0e5ec", boxShadow: nf }}>
+                <Mail size={14} /> Desconectar Gmail
+              </button>
+            )}
+            {gmailConnected && <span className="text-xs font-bold text-green-600 px-3 py-1 bg-green-100 rounded-full">Gmail Conectado ✓</span>}
+          </div>
 
           <div className="flex items-center gap-3">
             {feedback && (
