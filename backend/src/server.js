@@ -44,6 +44,7 @@ app.use('/api/maps', require('./routes/maps'));
 app.use('/api/inegi', require('./routes/inegi'));
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/n8n', require('./routes/n8n'));
+app.use('/api/autopilot', require('./routes/autopilot'));
 
 app.get('/api/ai-stats', (req, res) => {
   res.json({
@@ -76,6 +77,9 @@ const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {
   console.log(`✅ Server corriendo en http://localhost:${PORT}`);
   console.log(`   DATABASE_URL: ${process.env.DATABASE_URL ? '✓ cargado' : '✗ NO ENCONTRADO'}`);
+  
+  const autopilotService = require('./services/autopilot');
+  autopilotService.resumeIfActive();
 });
 
 // Desactivar timeouts del servidor para soportar conexiones SSE largas (scraping puede durar varios minutos)

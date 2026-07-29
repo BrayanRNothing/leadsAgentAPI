@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
-import { Search, Database, LogOut, ArrowLeft, Radar, MapPin, Users, Flame, ArrowDown, Mail, Phone } from 'lucide-react';
+import { Search, Database, LogOut, ArrowLeft, Radar, MapPin, Users, Flame, ArrowDown, Mail, Phone, Play } from 'lucide-react';
 import LoginSquare from './LoginSquare';
 import ScrapingView from './ScrapingView';
 import HistoryView from './HistoryView';
@@ -287,6 +287,26 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                       </div>
                       <div className="flex-1 hidden sm:block opacity-0 pointer-events-none">
                         {/* Empty placeholder for grid balance */}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Auto-Piloto Integrado */}
+                  <div className="w-full">
+                    <h2 className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4 ml-2 sm:ml-4">Automatización</h2>
+                    <div className="flex items-center w-full">
+                      <div className="w-full sm:w-1/2">
+                        <ActionCard 
+                          item={{
+                            title: 'Auto-Piloto',
+                            desc: 'Envío de correos y captación masiva (Automático)',
+                            icon: <Play size={24} color="#667eea" />,
+                            glowColor: 'rgba(102,126,234,0.4)',
+                            iconGlow: 'rgba(102,126,234,0.3)',
+                          }}
+                          onClick={() => navigate('/autopilot')}
+                          index={0}
+                        />
                       </div>
                     </div>
                   </div>

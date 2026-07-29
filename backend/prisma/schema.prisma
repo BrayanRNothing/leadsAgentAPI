@@ -27,7 +27,7 @@ model Usuario {
 }
 
 model Lead {
-  id              Int      @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   nombre          String
   telefono        String?
   sitioWeb        String?
@@ -35,44 +35,44 @@ model Lead {
   direccion       String?
   categoria       String?
   terminoBusqueda String
-  ubicacion       String?  // Estado/ciudad de la búsqueda
+  ubicacion       String? // Estado/ciudad de la búsqueda
   calificacion    Float?
   reviews         Int?
   lat             Float?
   lng             Float?
   redesSociales   Json?
-  fuente          String?  @default("maps")
-  status          String   @default("active") // "active" o "discarded"
+  fuente          String?       @default("maps")
+  status          String        @default("active") // "active" o "discarded"
   pipelineState   PipelineState @default(NEW) // Pipeline stage for contact flow
-  contactoEstado  Json?    // Guarda estado de contacto: { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" }
-  creadoEn        DateTime @default(now())
+  contactoEstado  Json? // Guarda estado de contacto: { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" }
+  creadoEn        DateTime      @default(now())
 
   // Relación con mensajes enviados
-  mensajes        LeadMensaje[]
+  mensajes LeadMensaje[]
 }
 
 model CampanaCorreo {
-  id          Int      @id @default(autoincrement())
-  nombre      String
-  asunto      String
-  cuerpo      String   // Plantilla HTML o texto
-  estado      String   @default("draft") // "draft", "sending", "completed"
-  creadoEn    DateTime @default(now())
-  
-  mensajes    LeadMensaje[]
+  id       Int      @id @default(autoincrement())
+  nombre   String
+  asunto   String
+  cuerpo   String // Plantilla HTML o texto
+  estado   String   @default("draft") // "draft", "sending", "completed"
+  creadoEn DateTime @default(now())
+
+  mensajes LeadMensaje[]
 }
 
 model LeadMensaje {
-  id          Int      @id @default(autoincrement())
-  leadId      Int
-  campanaId   Int
-  estado      String   @default("pending") // "pending", "sent", "opened", "replied", "failed"
-  mensajeId   String?  // ID devuelto por Resend (para trackear)
-  enviadoEn   DateTime?
-  error       String?
+  id        Int       @id @default(autoincrement())
+  leadId    Int
+  campanaId Int
+  estado    String    @default("pending") // "pending", "sent", "opened", "replied", "failed"
+  mensajeId String? // ID devuelto por Resend (para trackear)
+  enviadoEn DateTime?
+  error     String?
 
-  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  campana     CampanaCorreo @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  lead    Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campana CampanaCorreo @relation(fields: [campanaId], references: [id], onDelete: Cascade)
 }
 
 model InegiLead {
@@ -109,4 +109,14 @@ model MapsLead {
   fuente          String?  @default("maps")
   status          String   @default("active")
   creadoEn        DateTime @default(now())
+}
+
+model AutoPilotConfig {
+  id              Int      @id @default(1) // Single row config
+  isActive        Boolean  @default(false)
+  batchSize       Int      @default(50)
+  delaySeconds    Int      @default(30)
+  templateSubject String   @default("Propuesta de Mantenimiento y Servicios HVAC")
+  templateHtml    String   @default("<h1>Hola, {{nombre}}</h1><p>Notamos que...</p>")
+  updatedAt       DateTime @updatedAt
 }
