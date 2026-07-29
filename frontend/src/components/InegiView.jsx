@@ -140,7 +140,7 @@ export default function InegiView({ onBack }) {
           <select
             value={categoriaFilter}
             onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="w-full sm:w-auto h-12 px-4 rounded-xl outline-none transition-all font-medium appearance-none text-sm"
+            className="w-full sm:w-[220px] max-w-[240px] h-12 px-4 rounded-xl outline-none transition-all font-medium text-sm truncate"
             style={{
               background: '#e0e5ec',
               boxShadow: 'inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.8)',
@@ -148,17 +148,11 @@ export default function InegiView({ onBack }) {
             }}
           >
             <option value="">Todas las Categorías</option>
-            {Object.entries(
-              stats.categorias.reduce((acc, cat) => {
-                const base = cat.nombre.split(' (')[0];
-                acc[base] = (acc[base] || 0) + cat.count;
-                return acc;
-              }, {})
-            ).map(([nombre, count], idx) => (
-              <option key={idx} value={nombre}>
-                {nombre}
-              </option>
-            ))}
+            <option value="hotel">Hoteles y Hospedaje</option>
+            <option value="hospital">Hospitales y Salud</option>
+            <option value="comercial">Plazas y Comercial</option>
+            <option value="plaza">Plazas Comerciales</option>
+            <option value="industria">Industria y Fábricas</option>
           </select>
 
           <button
