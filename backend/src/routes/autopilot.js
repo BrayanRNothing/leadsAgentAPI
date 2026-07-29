@@ -59,6 +59,33 @@ router.put('/config', async (req, res) => {
   }
 });
 
+// GET /api/autopilot/status - Live stats
+router.get('/status', async (req, res) => {
+  try {
+    const config = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
+    const [inProcess, sent, replied, interested, classified] = await Promise.all([
+      prisma.lead.count({ where: { pipelineState: 'NEW' } }),
+      prisma.lead.count({ where: { pipelineState: 'SENT' } }),
+      prisma.lead.count({ where: { pipelineState: 'REPLIED' } }),
+      prisma.lead.count({ where: { pipelineState: 'INTERESTED' } }),
+      prisma.lead.count({ where: { pipelineState: { in: ['INTERESTED','NOT_INTERESTED','MEETING_BOOKED','FOLLOW_UP','REQUIRES_HUMAN','INVALID'] } } }),
+    ]);
+    res.json({
+      isRunning: autopilotService.getIsRunning(),
+      globalActive: config?.globalActive || false,
+      phase1Active: config?.phase1Active || false,
+      phase2Active: config?.phase2Active || false,
+      phase3Active: config?.phase3Active || false,
+      sentTodayCount: config?.sentTodayCount || 0,
+      dailyLimit: config?.dailyLimit || 200,
+      counts: { inProcess, sent, replied, interested, classified }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching status' });
+  }
+});
+
 // POST /api/autopilot/start - Start the bot
 router.post('/start', async (req, res) => {
   try {

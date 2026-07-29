@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
 const { Resend } = require("resend");
 const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
@@ -185,4 +185,6 @@ async function resumeIfActive() {
   }
 }
 
-module.exports = { startAutoPilot, stopAutoPilot, resumeIfActive };
+function getIsRunning() { return isRunning; }
+
+module.exports = { startAutoPilot, stopAutoPilot, resumeIfActive, getIsRunning };
