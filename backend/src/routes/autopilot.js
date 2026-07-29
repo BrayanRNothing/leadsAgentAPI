@@ -24,12 +24,16 @@ router.get('/config', async (req, res) => {
 router.put('/config', async (req, res) => {
   try {
     const {
+      globalActive, phase1Active, phase2Active, phase3Active,
       batchSize, delaySeconds, templateSubject, templateHtml,
-      companyName, companyContext, availability,
-      gmailReaderActive, gmailReaderMode, notifyEmail
+      companyName, companyContext, availability, notifyEmail
     } = req.body;
 
     const data = {
+      globalActive: !!globalActive,
+      phase1Active: !!phase1Active,
+      phase2Active: !!phase2Active,
+      phase3Active: !!phase3Active,
       batchSize: parseInt(batchSize) || 50,
       delaySeconds: parseInt(delaySeconds) || 30,
       templateSubject: templateSubject || '',
@@ -37,8 +41,6 @@ router.put('/config', async (req, res) => {
       companyName: companyName || 'Empresa HVAC',
       companyContext: companyContext || '',
       availability: availability || '',
-      gmailReaderActive: !!gmailReaderActive,
-      gmailReaderMode: gmailReaderMode || 'notify',
       notifyEmail: notifyEmail || null
     };
 

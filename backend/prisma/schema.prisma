@@ -112,8 +112,15 @@ model MapsLead {
 }
 
 model AutoPilotConfig {
-  id              Int      @id @default(1) // Single row config
-  isActive        Boolean  @default(false)
+  id              Int      @id @default(1)
+
+  // Switches de Automatización
+  globalActive    Boolean  @default(false)
+  phase1Active    Boolean  @default(false) // Extracción INEGI -> En Proceso
+  phase2Active    Boolean  @default(false) // Envío de Correos y Monitoreo
+  phase3Active    Boolean  @default(false) // Clasificación IA y Auto-Respuesta
+
+  // Configuración de Envío
   batchSize       Int      @default(50)
   delaySeconds    Int      @default(30)
   templateSubject String   @default("Propuesta de Mantenimiento y Servicios HVAC")
@@ -122,14 +129,10 @@ model AutoPilotConfig {
   // Perfil de empresa para que la IA tenga contexto
   companyName     String   @default("Empresa HVAC")
   companyContext  String   @default("Ofrecemos servicios de reubicación, mantenimiento y recubrimiento anticorrosivo para sistemas HVAC industriales. Nuestros clientes son hoteles, hospitales, plazas comerciales y plantas industriales.")
-  
-  // Horarios de disponibilidad del jefe para agendar videollamadas
   availability    String   @default("Lunes a Viernes, 9:00am - 6:00pm (Hora de México). Para agendar, puede responder este correo o ir a: [LINK_CALENDLY]")
+  notifyEmail     String?  // Correo del jefe donde se mandan alertas
   
   // Gmail Reader Bot
-  gmailReaderActive   Boolean  @default(false)
-  gmailReaderMode     String   @default("notify") // "notify" o "auto_reply"
-  notifyEmail         String?  // Correo del jefe donde se mandan alertas de respuestas
   gmailAccessToken    String?  // OAuth token de Gmail (se guarda encriptado idealmente)
   gmailRefreshToken   String?
   
