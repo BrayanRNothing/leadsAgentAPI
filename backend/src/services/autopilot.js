@@ -50,11 +50,26 @@ async function loop() {
 
     // 2. If no leads in CRM, pull from InegiLead
     if (pendingLeads.length === 0) {
-      console.log('[Auto-Piloto] Buscando nuevos leads en INEGI...');
+      // Palabras clave estratégicas para filtrar leads "peces gordos"
+      const keywords = [
+        'hotel', 'resort', 'motel', 'hospedaje', 'posada',
+        'hospital', 'clinica', 'sanatorio', 'medico', 'salud',
+        'comercial', 'plaza', 'supermercado', 'mall', 'corporativo', 'departamental',
+        'industria', 'fabrica', 'planta', 'manufactura',
+        'restaurante'
+      ];
+      
+      const orConditions = keywords.flatMap(kw => [
+        { nombre: { contains: kw, mode: 'insensitive' } },
+        { categoria: { contains: kw, mode: 'insensitive' } }
+      ]);
+
+      console.log('[Auto-Piloto] Buscando nuevos leads calificados en INEGI...');
       const rawLeads = await prisma.inegiLead.findMany({
         where: { 
           correo: { not: null, not: '' },
-          status: 'active'
+          status: 'active',
+          OR: orConditions
         },
         take: config.batchSize
       });
