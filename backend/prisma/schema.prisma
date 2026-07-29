@@ -123,12 +123,12 @@ model AutoPilotConfig {
   // Configuración de Envío
   batchSize       Int      @default(50)
   delaySeconds    Int      @default(30)
-  templateSubject String   @default("Propuesta de Mantenimiento y Servicios HVAC")
-  templateHtml    String   @default("<h1>Hola, {{nombre_empresa}}</h1><p>Notamos que...</p>")
+  templateSubject String   @default("Mantenimiento y Recubrimiento Anticorrosivo HVAC")
+  templateHtml    String   @default("<h1>Hola, {{nombre_empresa}}</h1><p>Somos Infiniguard, especialistas en recubrimiento anticorrosivo y mantenimiento para sistemas HVAC...</p>")
 
   // Perfil de empresa para que la IA tenga contexto
-  companyName     String   @default("Empresa HVAC")
-  companyContext  String   @default("Ofrecemos servicios de reubicación, mantenimiento y recubrimiento anticorrosivo para sistemas HVAC industriales. Nuestros clientes son hoteles, hospitales, plazas comerciales y plantas industriales.")
+  companyName     String   @default("Infiniguard")
+  companyContext  String   @default("Somos Infiniguard, ofrecemos servicios de reubicación, mantenimiento y recubrimiento anticorrosivo para sistemas HVAC industriales. Nuestros clientes son hoteles, hospitales, plazas comerciales y plantas industriales en zonas costeras o de alta corrosión.")
   availability    String   @default("Lunes a Viernes, 9:00am - 6:00pm (Hora de México). Para agendar, puede responder este correo o ir a: [LINK_CALENDLY]")
   notifyEmail     String?  // Correo del jefe donde se mandan alertas
   

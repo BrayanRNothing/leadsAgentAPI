@@ -38,7 +38,7 @@ router.put('/config', async (req, res) => {
       delaySeconds: parseInt(delaySeconds) || 30,
       templateSubject: templateSubject || '',
       templateHtml: templateHtml || '',
-      companyName: companyName || 'Empresa HVAC',
+      companyName: companyName || 'Infiniguard',
       companyContext: companyContext || '',
       availability: availability || '',
       notifyEmail: notifyEmail || null
