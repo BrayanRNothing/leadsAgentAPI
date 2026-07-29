@@ -3,14 +3,33 @@ const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+const QUALIFIED_KEYWORDS = [
+  'hotel', 'resort', 'motel', 'hospedaje', 'posada',
+  'hospital', 'clinica', 'sanatorio', 'medico', 'salud',
+  'comercial', 'plaza', 'supermercado', 'mall', 'corporativo', 'departamental',
+  'industria', 'fabrica', 'planta', 'manufactura'
+];
+
+const keywordOrConditions = QUALIFIED_KEYWORDS.flatMap(kw => [
+  { nombre: { contains: kw, mode: 'insensitive' } },
+  { categoria: { contains: kw, mode: 'insensitive' } }
+]);
+
 // GET /api/inegi/stats
-// Devuelve un conteo de leads totales y agrupados por categoría para fuente 'inegi'
+// Devuelve un conteo de leads calificados y agrupados por categoría
 router.get('/stats', async (req, res) => {
   try {
-    const total = await prisma.inegiLead.count();
+    const baseWhere = {
+      correo: { not: null, not: '' },
+      status: 'active',
+      OR: keywordOrConditions
+    };
+
+    const total = await prisma.inegiLead.count({ where: baseWhere });
 
     const categoriasRaw = await prisma.inegiLead.groupBy({
       by: ['categoria'],
+      where: baseWhere,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     });
@@ -33,11 +52,14 @@ router.get('/leads', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
-    const { search, categoria, telefono, correo } = req.query;
+    const { search, categoria } = req.query;
 
-    const where = {};
-    const andConditions = [];
-    
+    const andConditions = [
+      { correo: { not: null, not: '' } },
+      { status: 'active' },
+      { OR: keywordOrConditions }
+    ];
+
     if (search) {
       andConditions.push({
         OR: [
@@ -46,25 +68,12 @@ router.get('/leads', async (req, res) => {
         ]
       });
     }
-    
+
     if (categoria) {
       andConditions.push({ categoria: { contains: categoria, mode: 'insensitive' } });
     }
 
-    if (telefono === 'true') {
-      andConditions.push({ telefono: { not: null } });
-    }
-    
-    if (correo === 'true') {
-      andConditions.push({ correo: { not: null } });
-    }
-
-    if (andConditions.length > 0) {
-      where.AND = andConditions;
-    }
-    
-    // Ocultar leads descartados globalmente
-    where.status = { not: 'discarded' };
+    const where = { AND: andConditions };
 
     const [leads, total] = await Promise.all([
       prisma.inegiLead.findMany({
