@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Download, Mail, ArrowLeft, Phone, Globe, MapPin, Trash2, XCircle, CheckCircle, ExternalLink, Star, Users } from 'lucide-react';
+import { Download, Mail, ArrowLeft, Phone, Globe, MapPin, Trash2, XCircle, CheckCircle, ExternalLink, Star, Users, UploadCloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function HistoryView({ onBack, dbMode = 'maps' }) {
@@ -17,6 +17,10 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
   const [emailBody, setEmailBody] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailProgress, setEmailProgress] = useState(null);
+
+  // File upload state
+  const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   // Manual Lead Modal states
   const [showManualLeadModal, setShowManualLeadModal] = useState(false);
@@ -48,7 +52,8 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
 
   const fetchCategorias = async () => {
     try {
-      const res = await axios.get(`https://leadsagentapi-production.up.railway.app/api/leads/categorias?dbMode=${dbMode}`);
+      const endpoint = dbMode === 'maps' ? '/api/maps/categorias' : '/api/leads/categorias';
+      const res = await axios.get(`https://leadsagentapi-production.up.railway.app${endpoint}`);
       setCategorias(res.data);
     } catch (error) {
       console.error(error);
@@ -153,13 +158,99 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
     }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploadingCSV(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target.result;
+        // Basic CSV parser (split by newline and comma, handling simple quotes)
+        const rows = text.split(/\r?\n/).map(row => {
+          const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^,]*))(?:,|$)/g;
+          let match;
+          const fields = [];
+          while (match = regex.exec(row)) {
+            if (match[1] !== undefined) {
+              fields.push(match[1].replace(/\"\"/g, '\"'));
+            } else if (match[2] !== undefined) {
+              fields.push(match[2]);
+            }
+            if (match[0].length === 0 || match[0] === row.substring(match.index)) break;
+          }
+          return fields;
+        }).filter(row => row.some(cell => cell.trim() !== ''));
+
+        if (rows.length < 2) throw new Error("CSV vacío o sin suficientes datos");
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        
+        let importedCount = 0;
+        const hIndex = {
+          nombre: headers.findIndex(h => h.includes('nombre') || h.includes('empresa')),
+          telefono: headers.findIndex(h => h.includes('telefono') || h.includes('tel')),
+          correo: headers.findIndex(h => h.includes('correo') || h.includes('email')),
+          sitioWeb: headers.findIndex(h => h.includes('sitio') || h.includes('web')),
+          direccion: headers.findIndex(h => h.includes('direccion') || h.includes('ubicacion')),
+          fuente: headers.findIndex(h => h.includes('fuente')),
+          categoria: headers.findIndex(h => h.includes('empresa') || h.includes('categoria')),
+        };
+
+        const newLeads = [];
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const getField = (key) => hIndex[key] >= 0 ? row[hIndex[key]] || '' : '';
+          
+          if (!getField('nombre')) continue;
+
+          const lead = {
+            nombre: getField('nombre'),
+            telefono: getField('telefono'),
+            correo: getField('correo'),
+            sitioWeb: getField('sitioWeb'),
+            direccion: getField('direccion'),
+            categoria: getField('categoria') || 'Importado CSV',
+            fuente: 'inegi_saved',
+            terminoBusqueda: expandedCat.termino,
+            ubicacion: expandedCat.ubicacion === 'General' ? null : expandedCat.ubicacion,
+            status: 'active',
+            pipelineState: 'CONTACTING'
+          };
+          
+          const res = await axios.post('https://leadsagentapi-production.up.railway.app/api/leads', lead);
+          newLeads.push(res.data);
+          importedCount++;
+        }
+
+        setLeads(prev => ({
+          ...prev,
+          [expandedCat.catId]: [...newLeads, ...(prev[expandedCat.catId] || [])]
+        }));
+        
+        alert(`Se importaron ${importedCount} leads correctamente.`);
+      } catch (error) {
+        console.error("Error importando CSV:", error);
+        alert("Hubo un error importando el CSV. Verifica el formato.");
+      } finally {
+        setIsUploadingCSV(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const toggleCategory = async (cat) => {
     const catId = `${cat.termino}___${cat.ubicacion}`;
     setExpandedCat({ ...cat, catId });
     if (!leads[catId]) {
       setLoadingLeads(true);
       try {
-        const res = await axios.get(`https://leadsagentapi-production.up.railway.app/api/leads/categorias/${encodeURIComponent(cat.termino)}/leads?dbMode=${dbMode}&ubicacion=${encodeURIComponent(cat.ubicacion)}`);
+        const endpoint = dbMode === 'maps' 
+        ? `/api/maps/categorias/${encodeURIComponent(cat.termino)}/leads?ubicacion=${encodeURIComponent(cat.ubicacion)}`
+        : `/api/leads/categorias/${encodeURIComponent(cat.termino)}/leads?ubicacion=${encodeURIComponent(cat.ubicacion)}`;
+      
+      const res = await axios.get(`https://leadsagentapi-production.up.railway.app${endpoint}`);
         setLeads(prev => ({ ...prev, [catId]: res.data }));
       } catch (error) {
         console.error(error);
@@ -171,7 +262,11 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
 
   const handleDownload = (e) => {
     e.stopPropagation();
-    window.open(`https://leadsagentapi-production.up.railway.app/api/leads/exportar/${encodeURIComponent(expandedCat.termino)}?dbMode=${dbMode}&ubicacion=${encodeURIComponent(expandedCat.ubicacion)}`, '_blank');
+    const endpoint = dbMode === 'maps'
+      ? `/api/maps/exportar/${encodeURIComponent(expandedCat.termino)}?ubicacion=${encodeURIComponent(expandedCat.ubicacion)}`
+      : `/api/leads/exportar/${encodeURIComponent(expandedCat.termino)}?ubicacion=${encodeURIComponent(expandedCat.ubicacion)}`;
+
+    window.open(`https://leadsagentapi-production.up.railway.app${endpoint}`, '_blank');
   };
 
   const toggleStatus = async (leadId, currentStatus, catId) => {
@@ -238,7 +333,11 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
     if (!window.confirm(`¿Seguro que quieres borrar la búsqueda "${cat.termino}" en "${cat.ubicacion}" para siempre?`)) return;
 
     try {
-      await axios.delete(`https://leadsagentapi-production.up.railway.app/api/leads/categorias/${encodeURIComponent(cat.termino)}?dbMode=${dbMode}&ubicacion=${encodeURIComponent(cat.ubicacion)}`);
+      const endpoint = dbMode === 'maps' 
+        ? `/api/maps/categorias/${encodeURIComponent(cat.termino)}?ubicacion=${encodeURIComponent(cat.ubicacion)}`
+        : `/api/leads/categorias/${encodeURIComponent(cat.termino)}?ubicacion=${encodeURIComponent(cat.ubicacion)}`;
+
+      await axios.delete(`https://leadsagentapi-production.up.railway.app${endpoint}`);
       setCategorias(prev => prev.filter(c => !(c.termino === cat.termino && c.ubicacion === cat.ubicacion)));
       if (expandedCat && expandedCat.termino === cat.termino && expandedCat.ubicacion === cat.ubicacion) {
         setExpandedCat(null);
@@ -349,6 +448,25 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
                       >
                         <span className="text-xl font-bold">+</span>
                       </button>
+                      {dbMode === 'inegi' && (
+                        <>
+                          <input 
+                            type="file" 
+                            accept=".csv" 
+                            ref={fileInputRef} 
+                            style={{ display: 'none' }} 
+                            onChange={handleFileUpload} 
+                          />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                            disabled={isUploadingCSV}
+                            className={`w-10 h-10 flex items-center justify-center text-green-600 rounded-xl transition-all shadow-[4px_4px_8px_rgba(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] ${isUploadingCSV ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+                            title="Importar Leads CSV"
+                          >
+                            <UploadCloud size={18} />
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowEmailModal(true); }}
                         className="w-10 h-10 flex items-center justify-center text-purple-600 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[4px_4px_8px_rgba(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]"

@@ -731,7 +731,7 @@ router.post('/search', async (req, res) => {
       }
 
       try {
-        const existe = await prisma.lead.findFirst({
+        const existe = await prisma.mapsLead.findFirst({
           where: { nombre: n.nombre }
         });
 
@@ -740,7 +740,7 @@ router.post('/search', async (req, res) => {
           continue;
         }
 
-        const lead = await prisma.lead.create({
+        const lead = await prisma.mapsLead.create({
           data: { 
             nombre: n.nombre, 
             telefono: n.telefono, 
@@ -904,7 +904,7 @@ router.get('/search-stream', async (req, res) => {
 
         const nombreNorm = normalizeName(n.nombre);
 
-        const todos = await prisma.lead.findMany({
+        const todos = await prisma.mapsLead.findMany({
           where: {
             OR: [
               { nombre: n.nombre },
@@ -955,7 +955,7 @@ router.get('/search-stream', async (req, res) => {
         validCount++;
         savedCountRef.count = validCount; // Sincroniza para detener Maps
 
-        const lead = await prisma.lead.create({
+        const lead = await prisma.mapsLead.create({
           data: { 
             nombre: n.nombre, 
             telefono: telefono, 

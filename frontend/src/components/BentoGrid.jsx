@@ -218,14 +218,14 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                     </div>
                   </div>
                   
-                  {/* Flujo INEGI */}
+                  {/* Pipeline Principal */}
                   <div className="w-full">
-                    <h2 className="text-[10px] sm:text-xs font-bold text-teal-600 uppercase tracking-widest mb-4 ml-2 sm:ml-4">Pipeline DENUE (INEGI)</h2>
+                    <h2 className="text-[10px] sm:text-xs font-bold text-teal-600 uppercase tracking-widest mb-4 ml-2 sm:ml-4">Pipeline Principal</h2>
                     <div className="flex items-center w-full">
                       <div className="flex-1">
                         <PipelineNode 
                           id="inegi"
-                          title="Base INEGI"
+                          title="Base de Datos"
                           icon={<Database size={20} color="#38b2ac" />}
                           route="/inegi"
                           delay={0.1}
@@ -261,10 +261,10 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                   {/* Separador Visual */}
                   <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
 
-                  {/* Flujo Maps */}
+                  {/* Herramientas Independientes */}
                   <div className="w-full">
-                    <h2 className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest mb-4 ml-2 sm:ml-4">Pipeline Google Maps</h2>
-                    <div className="flex items-center w-full">
+                    <h2 className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest mb-4 ml-2 sm:ml-4">Herramientas de Extracción</h2>
+                    <div className="flex items-center w-full gap-4">
                       <div className="flex-1">
                         <PipelineNode 
                           id="maps"
@@ -274,29 +274,19 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                           delay={0.2}
                         />
                       </div>
-                      <HConnector delay={0.4} />
                       <div className="flex-1">
                         <PipelineNode 
                           id="history-maps"
-                          title="En Proceso"
-                          icon={<Users size={20} color="#3182ce" />}
+                          title="Historial Maps"
+                          icon={<Database size={20} color="#3182ce" />}
                           count={stats.mapsLeads}
                           color="#3182ce"
                           route="/history/maps"
-                          delay={0.5}
+                          delay={0.3}
                         />
                       </div>
-                      <HConnector delay={0.7} />
-                      <div className="flex-1">
-                        <PipelineNode 
-                          id="hot-maps"
-                          title="Interesados"
-                          icon={<Flame size={20} color="#ed8936" />}
-                          count={0}
-                          color="#ed8936"
-                          route="/pipeline/maps"
-                          delay={0.8}
-                        />
+                      <div className="flex-1 hidden sm:block opacity-0 pointer-events-none">
+                        {/* Empty placeholder for grid balance */}
                       </div>
                     </div>
                   </div>

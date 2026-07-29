@@ -10,13 +10,9 @@ const prisma = new PrismaClient({
 // Obtener categorías agrupadas por término y ubicación
 router.get('/categorias', async (req, res) => {
   try {
-    const { dbMode } = req.query;
-    const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
-
     const leadsGroups = await prisma.lead.groupBy({
       by: ['terminoBusqueda', 'ubicacion'],
       where: {
-        fuente: fuenteFilter,
         status: { not: 'discarded' },
         pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'] }
       },
@@ -43,11 +39,9 @@ router.get('/categorias', async (req, res) => {
 router.get('/categorias/:termino/leads', async (req, res) => {
   try {
     const { termino } = req.params;
-    const { dbMode, ubicacion } = req.query;
-    const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
+    const { ubicacion } = req.query;
 
     const whereObj = {
-      fuente: fuenteFilter,
       pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'] }
     };
     
@@ -72,16 +66,13 @@ router.get('/categorias/:termino/leads', async (req, res) => {
 });
 
 
-// Borrar una categoría (y todos sus leads)
+// Eliminar categoría entera
 router.delete('/categorias/:termino', async (req, res) => {
   const { termino } = req.params;
-  const { dbMode, ubicacion } = req.query;
-  const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
+  const { ubicacion } = req.query;
   
   try {
-    const whereObj = {
-      fuente: fuenteFilter
-    };
+    const whereObj = {};
     
     if (termino !== 'ALL') {
       whereObj.terminoBusqueda = termino;
@@ -126,7 +117,7 @@ router.patch('/:id/status', async (req, res) => {
     });
     
     // Si el lead viene de INEGI, también actualizar en InegiLead global para tacharlo
-    if (lead.fuente === 'inegi_saved') {
+    if (['inegi_saved', 'inegi'].includes(lead.fuente)) {
       await prisma.inegiLead.updateMany({
         where: {
           nombre: lead.nombre,
@@ -157,16 +148,14 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Exportar leads a CSV (por id compuesto termino__ubicacion)
+// Exportar CSV
 router.get('/exportar/:termino', async (req, res) => {
   const { termino } = req.params;
-  const { dbMode, ubicacion } = req.query;
-  const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
+  const { ubicacion } = req.query;
   
   try {
     const whereObj = {
-      terminoBusqueda: termino,
-      fuente: fuenteFilter
+      terminoBusqueda: termino
     };
     
     if (ubicacion && ubicacion !== 'General') {
@@ -290,15 +279,12 @@ router.patch('/:id/pipeline', async (req, res) => {
   }
 });
 
-// Obtener leads en el Pipeline (CRM)
+// Obtener leads para el pipeline
 router.get('/pipeline', async (req, res) => {
   try {
-    const { dbMode } = req.query;
-    const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
-
     const leads = await prisma.lead.findMany({
       where: {
-        fuente: fuenteFilter,
+        status: { not: 'discarded' },
         pipelineState: {
           in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED']
         }
@@ -318,15 +304,12 @@ router.get('/pipeline', async (req, res) => {
   }
 });
 
-// Obtener conteo de leads por pipelineState (opcional: ?dbMode=inegi)
+// Obtener conteo de leads por pipelineState
 router.get('/pipeline-stats', async (req, res) => {
   try {
-    const { dbMode } = req.query;
-    const fuenteFilter = dbMode === 'inegi' ? 'inegi_saved' : { not: 'inegi_saved' };
-
     const groups = await prisma.lead.groupBy({
       by: ['pipelineState'],
-      where: { fuente: fuenteFilter, status: { not: 'discarded' } },
+      where: { status: { not: 'discarded' } },
       _count: { _all: true }
     });
 

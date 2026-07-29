@@ -83,6 +83,8 @@ async function processCSVFile(filePath) {
       ubicacion: ubicacion,
       lat: parseFloat(row.latitud) || null,
       lng: parseFloat(row.longitud) || null,
+      fuente: 'inegi',
+      pipelineState: 'NEW'
     };
 
     batch.push(newLead);
@@ -90,7 +92,7 @@ async function processCSVFile(filePath) {
     // Si el lote llegó a su tamaño máximo, insertamos a la BD
     if (batch.length >= BATCH_SIZE) {
       try {
-        await prisma.inegiLead.createMany({
+        await prisma.lead.createMany({
           data: batch,
           skipDuplicates: true
         });
@@ -106,7 +108,7 @@ async function processCSVFile(filePath) {
   // Insertar los restantes al final
   if (batch.length > 0) {
     try {
-      await prisma.inegiLead.createMany({
+      await prisma.lead.createMany({
         data: batch,
         skipDuplicates: true
       });
@@ -127,8 +129,10 @@ async function importInegiData() {
 
   try {
     console.log('🧹 Limpiando base de datos de registros INEGI anteriores...');
-    // Se elimina la tabla inegiLead. Si anteriormente se usó Lead, asegúrate de que inegiLead sea la tabla correcta.
-    await prisma.inegiLead.deleteMany();
+    // Se elimina de la tabla principal los que vienen del inegi
+    await prisma.lead.deleteMany({
+      where: { fuente: 'inegi' }
+    });
     console.log('✅ Base de datos limpia. Comenzando importación...');
   } catch (e) {
     console.error('Error al limpiar BD:', e);

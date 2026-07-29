@@ -91,3 +91,22 @@ model InegiLead {
   creadoEn        DateTime @default(now())
 }
 
+model MapsLead {
+  id              Int      @id @default(autoincrement())
+  nombre          String
+  telefono        String?
+  sitioWeb        String?
+  correo          String?
+  direccion       String?
+  categoria       String?
+  terminoBusqueda String
+  ubicacion       String?
+  calificacion    Float?
+  reviews         Int?
+  lat             Float?
+  lng             Float?
+  redesSociales   Json?
+  fuente          String?  @default("maps")
+  status          String   @default("active")
+  creadoEn        DateTime @default(now())
+}

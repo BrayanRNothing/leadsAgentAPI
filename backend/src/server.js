@@ -19,16 +19,14 @@ app.get('/api/home-stats', async (req, res) => {
   try {
     const pipelineStatesToExclude = ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'];
     const [mapsLeads, inegiLeads] = await Promise.all([
-      prisma.lead.count({ 
+      prisma.mapsLead.count({ 
         where: { 
-          fuente: 'maps', 
-          status: { not: 'discarded' },
-          pipelineState: { notIn: pipelineStatesToExclude }
+          status: { not: 'discarded' }
         } 
       }),
       prisma.lead.count({ 
         where: { 
-          fuente: 'inegi_saved',
+          fuente: { in: ['inegi_saved', 'inegi'] },
           status: { not: 'discarded' },
           pipelineState: { notIn: pipelineStatesToExclude }
         } 
@@ -42,6 +40,7 @@ app.get('/api/home-stats', async (req, res) => {
 });
 
 app.use('/api/leads', leadsRoutes);
+app.use('/api/maps', require('./routes/maps'));
 app.use('/api/inegi', require('./routes/inegi'));
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/n8n', require('./routes/n8n'));

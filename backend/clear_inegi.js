@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); prisma.inegiLead.deleteMany({}).then(() => console.log('Cleared InegiLead table')).finally(() => prisma.$disconnect());
