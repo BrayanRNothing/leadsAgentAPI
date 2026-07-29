@@ -314,6 +314,10 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                           route="/history/inegi"
                           delay={0.4}
                         />
+                        <div className="flex justify-center gap-2 mt-2" style={{ opacity: stats.inegiLeads !== undefined ? 1 : 0 }}>
+                          <span className="text-[9px] font-bold text-gray-500 uppercase">{stats.inegiNew || 0} Cola</span>
+                          <span className="text-[9px] font-bold text-indigo-500 uppercase">{stats.inegiSent || 0} Env.</span>
+                        </div>
                       </div>
                       <AnimatedArrow delay={0.6} />
                       <div className="flex-1 max-w-[140px]">
@@ -321,7 +325,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                           id="hot-inegi"
                           title="Interesados"
                           icon={<Flame size={24} color="#ed8936" />}
-                          count={0}
+                          count={stats.inegiInterested || 0}
                           color="#ed8936"
                           route="/pipeline/inegi"
                           delay={0.7}

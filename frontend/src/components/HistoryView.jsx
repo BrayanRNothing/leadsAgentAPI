@@ -552,28 +552,34 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
                                       </div>
                                     </td>
                                     <td className="p-4 align-top min-w-[220px]">
-                                      {(() => {
-                                        let ce = lead.contactoEstado || { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" };
-                                        if (typeof ce === 'string') {
-                                          try { ce = JSON.parse(ce); } catch(e) { ce = { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" }; }
-                                        }
-                                        return (
-                                          <div className="flex flex-col gap-2 pt-1">
-                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
-                                              <input type="checkbox" checked={ce.correo} onChange={() => toggleContacto(lead.id, 'correo', ce, expandedCat.catId)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                              Correo Enviado
-                                            </label>
-                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
-                                              <input type="checkbox" checked={ce.whatsapp} onChange={() => toggleContacto(lead.id, 'whatsapp', ce, expandedCat.catId)} className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                                              WhatsApp
-                                            </label>
-                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
-                                              <input type="checkbox" checked={ce.llamada} onChange={() => toggleContacto(lead.id, 'llamada', ce, expandedCat.catId)} className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                                              Llamada
-                                            </label>
+                                      <div className="flex flex-col gap-2 pt-1">
+                                        {(() => {
+                                          const stateColors = {
+                                            'NEW': { color: 'text-blue-600', bg: 'bg-blue-100', text: 'En cola (Esperando envío)' },
+                                            'CONTACTING': { color: 'text-indigo-600', bg: 'bg-indigo-100', text: 'Enviando...' },
+                                            'SENT': { color: 'text-green-600', bg: 'bg-green-100', text: 'Correo Enviado' },
+                                            'REPLIED': { color: 'text-amber-600', bg: 'bg-amber-100', text: 'Respondieron' },
+                                            'INTERESTED': { color: 'text-orange-600', bg: 'bg-orange-100', text: 'Interesado' },
+                                            'MEETING_BOOKED': { color: 'text-purple-600', bg: 'bg-purple-100', text: 'Reunión Agendada' },
+                                            'REQUIRES_HUMAN': { color: 'text-red-600', bg: 'bg-red-100', text: 'Requiere Humano' },
+                                            'INVALID': { color: 'text-gray-600', bg: 'bg-gray-200', text: 'Descartado / Inválido' }
+                                          };
+                                          const state = lead.pipelineState || 'NEW';
+                                          const ui = stateColors[state] || stateColors['NEW'];
+                                          
+                                          return (
+                                            <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${ui.bg} ${ui.color} inline-block w-fit`}>
+                                              {ui.text}
+                                            </div>
+                                          );
+                                        })()}
+
+                                        {lead.contactoEstado?.ultimoMensajeRecibido && (
+                                          <div className="mt-1 text-[10px] font-medium text-gray-500 bg-white p-2 rounded-lg border border-gray-200 line-clamp-2">
+                                            <span className="font-bold text-gray-700">Respuesta:</span> {lead.contactoEstado.ultimoMensajeRecibido}
                                           </div>
-                                        );
-                                      })()}
+                                        )}
+                                      </div>
                                     </td>
                                     <td className="p-4 text-center align-middle">
                                       <div className="flex flex-col gap-2">

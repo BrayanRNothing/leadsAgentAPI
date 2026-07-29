@@ -18,25 +18,22 @@ const prisma = new PrismaClient();
 
 app.get('/api/home-stats', async (req, res) => {
   try {
-    const pipelineStatesToExclude = ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'];
-    const [mapsLeads, inegiLeads] = await Promise.all([
-      prisma.mapsLead.count({ 
-        where: { 
-          status: { not: 'discarded' }
-        } 
-      }),
-      prisma.lead.count({ 
-        where: { 
-          fuente: { in: ['inegi_saved', 'inegi'] },
-          status: { not: 'discarded' },
-          pipelineState: { notIn: pipelineStatesToExclude }
-        } 
-      })
+    const [mapsLeads, inegiNew, inegiSent, inegiInterested] = await Promise.all([
+      prisma.mapsLead.count({ where: { status: { not: 'discarded' } } }),
+      prisma.lead.count({ where: { fuente: { in: ['inegi_saved', 'inegi'] }, status: { not: 'discarded' }, pipelineState: 'NEW' } }),
+      prisma.lead.count({ where: { fuente: { in: ['inegi_saved', 'inegi'] }, status: { not: 'discarded' }, pipelineState: { in: ['CONTACTING', 'SENT'] } } }),
+      prisma.lead.count({ where: { fuente: { in: ['inegi_saved', 'inegi'] }, status: { not: 'discarded' }, pipelineState: { in: ['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'REQUIRES_HUMAN'] } } })
     ]);
-    res.json({ mapsLeads, inegiLeads });
+    res.json({ 
+      mapsLeads, 
+      inegiLeads: inegiNew + inegiSent, 
+      inegiNew, 
+      inegiSent, 
+      inegiInterested 
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ mapsLeads: 0, inegiLeads: 0 });
+    res.status(500).json({ mapsLeads: 0, inegiLeads: 0, inegiNew: 0, inegiSent: 0, inegiInterested: 0 });
   }
 });
 
