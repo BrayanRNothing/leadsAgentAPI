@@ -13,7 +13,7 @@ export default function AutoPilotView({ onBack }) {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/autopilot/config');
+      const res = await fetch('https://leadsagentapi-production.up.railway.app/api/autopilot/config');
       const data = await res.json();
       setConfig(data);
       setLoading(false);
@@ -28,7 +28,7 @@ export default function AutoPilotView({ onBack }) {
     setSaving(true);
     setFeedback(null);
     try {
-      const res = await fetch('http://localhost:3001/api/autopilot/config', {
+      const res = await fetch('https://leadsagentapi-production.up.railway.app/api/autopilot/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -47,7 +47,7 @@ export default function AutoPilotView({ onBack }) {
   const toggleBot = async () => {
     const endpoint = config.isActive ? 'stop' : 'start';
     try {
-      const res = await fetch(`http://localhost:3001/api/autopilot/${endpoint}`, { method: 'POST' });
+      const res = await fetch(`https://leadsagentapi-production.up.railway.app/api/autopilot/${endpoint}`, { method: 'POST' });
       if (res.ok) {
         setConfig(prev => ({ ...prev, isActive: !prev.isActive }));
       }
