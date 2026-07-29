@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, AlertCircle, Database, Send, BotMessageSquare, Building2, Mail, Power, Settings } from "lucide-react";
+import { ArrowLeft, Save, AlertCircle, Database, Send, BotMessageSquare, Building2, Mail, Power, Settings, Bot } from "lucide-react";
 
 const API = "https://leadsagentapi-production.up.railway.app";
 
