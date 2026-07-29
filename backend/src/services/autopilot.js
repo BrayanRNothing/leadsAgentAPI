@@ -55,8 +55,7 @@ async function loop() {
         'hotel', 'resort', 'motel', 'hospedaje', 'posada',
         'hospital', 'clinica', 'sanatorio', 'medico', 'salud',
         'comercial', 'plaza', 'supermercado', 'mall', 'corporativo', 'departamental',
-        'industria', 'fabrica', 'planta', 'manufactura',
-        'restaurante'
+        'industria', 'fabrica', 'planta', 'manufactura'
       ];
       
       const orConditions = keywords.flatMap(kw => [
