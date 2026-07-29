@@ -117,6 +117,21 @@ model AutoPilotConfig {
   batchSize       Int      @default(50)
   delaySeconds    Int      @default(30)
   templateSubject String   @default("Propuesta de Mantenimiento y Servicios HVAC")
-  templateHtml    String   @default("<h1>Hola, {{nombre}}</h1><p>Notamos que...</p>")
+  templateHtml    String   @default("<h1>Hola, {{nombre_empresa}}</h1><p>Notamos que...</p>")
+
+  // Perfil de empresa para que la IA tenga contexto
+  companyName     String   @default("Empresa HVAC")
+  companyContext  String   @default("Ofrecemos servicios de reubicación, mantenimiento y recubrimiento anticorrosivo para sistemas HVAC industriales. Nuestros clientes son hoteles, hospitales, plazas comerciales y plantas industriales.")
+  
+  // Horarios de disponibilidad del jefe para agendar videollamadas
+  availability    String   @default("Lunes a Viernes, 9:00am - 6:00pm (Hora de México). Para agendar, puede responder este correo o ir a: [LINK_CALENDLY]")
+  
+  // Gmail Reader Bot
+  gmailReaderActive   Boolean  @default(false)
+  gmailReaderMode     String   @default("notify") // "notify" o "auto_reply"
+  notifyEmail         String?  // Correo del jefe donde se mandan alertas de respuestas
+  gmailAccessToken    String?  // OAuth token de Gmail (se guarda encriptado idealmente)
+  gmailRefreshToken   String?
+  
   updatedAt       DateTime @updatedAt
 }

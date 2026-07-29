@@ -23,22 +23,29 @@ router.get('/config', async (req, res) => {
 // PUT /api/autopilot/config - Update bot config
 router.put('/config', async (req, res) => {
   try {
-    const { batchSize, delaySeconds, templateSubject, templateHtml } = req.body;
+    const {
+      batchSize, delaySeconds, templateSubject, templateHtml,
+      companyName, companyContext, availability,
+      gmailReaderActive, gmailReaderMode, notifyEmail
+    } = req.body;
+
+    const data = {
+      batchSize: parseInt(batchSize) || 50,
+      delaySeconds: parseInt(delaySeconds) || 30,
+      templateSubject: templateSubject || '',
+      templateHtml: templateHtml || '',
+      companyName: companyName || 'Empresa HVAC',
+      companyContext: companyContext || '',
+      availability: availability || '',
+      gmailReaderActive: !!gmailReaderActive,
+      gmailReaderMode: gmailReaderMode || 'notify',
+      notifyEmail: notifyEmail || null
+    };
+
     const updated = await prisma.autoPilotConfig.upsert({
       where: { id: 1 },
-      update: {
-        batchSize: parseInt(batchSize) || 50,
-        delaySeconds: parseInt(delaySeconds) || 30,
-        templateSubject,
-        templateHtml
-      },
-      create: {
-        id: 1,
-        batchSize: parseInt(batchSize) || 50,
-        delaySeconds: parseInt(delaySeconds) || 30,
-        templateSubject,
-        templateHtml
-      }
+      update: data,
+      create: { id: 1, ...data }
     });
     res.json(updated);
   } catch (error) {
