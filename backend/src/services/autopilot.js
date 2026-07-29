@@ -121,53 +121,16 @@ async function loop() {
     }
 
     if (pendingLeads.length === 0) {
-      console.log("[Auto-Piloto] Sin leads disponibles. Reintentando en 5 min...");
+      console.log("[Auto-Piloto] Sin leads disponibles para enviar. Reintentando en 5 min...");
       currentTimeout = setTimeout(loop, 5 * 60 * 1000);
       return;
     }
 
-    console.log(`[Auto-Piloto] Fase 2: Enviando lote de ${pendingLeads.length} correos...`);
-    let sentInBatch = 0;
-
-    for (const lead of pendingLeads) {
-      if (!isRunning) break;
-
-      const htmlBody = config.templateHtml.replace(/\{\{nombre_empresa\}\}/g, lead.nombre || "Empresa");
-
-      try {
-        const { data, error } = await resend.emails.send({
-          from: "Infiniguard <onboarding@resend.dev>",
-          to: [lead.correo],
-          subject: config.templateSubject,
-          html: htmlBody
-        });
-
-        if (error) {
-          console.error(`[Auto-Piloto] Error Resend para ${lead.correo}:`, error);
-        } else {
-          await prisma.lead.update({ where: { id: lead.id }, data: { pipelineState: "SENT" } });
-          await prisma.emailMessage.create({
-            data: { leadId: lead.id, isIncoming: false, subject: config.templateSubject, bodyText: htmlBody }
-          });
-          await prisma.autoPilotConfig.update({
-            where: { id: 1 }, data: { sentTodayCount: { increment: 1 } }
-          });
-          sentInBatch++;
-          console.log(`[Auto-Piloto] Lead ${lead.id} -> SENT (${config.sentTodayCount + sentInBatch}/${config.dailyLimit} hoy)`);
-        }
-      } catch (err) {
-        console.error(`[Auto-Piloto] Error enviando a ${lead.correo}:`, err.message);
-      }
-
-      if (isRunning) {
-        await new Promise(resolve => setTimeout(resolve, config.delaySeconds * 1000));
-      }
-    }
-
+    console.log(`[Auto-Piloto] Fase 2 activa: Hay ${pendingLeads.length} leads en cola esperando que n8n los extraiga. (Límite enviado hoy: ${config.sentTodayCount}/${config.dailyLimit})`);
+    
+    // N8n poll takes care of sending emails. We just wait.
     if (isRunning) {
-      const cooldownMs = config.batchCooldownHours * 60 * 60 * 1000;
-      console.log(`[Auto-Piloto] Lote enviado (${sentInBatch} correos). Cooldown: ${config.batchCooldownHours}h`);
-      currentTimeout = setTimeout(loop, cooldownMs);
+      currentTimeout = setTimeout(loop, 30 * 1000); // Check again in 30 seconds
     }
 
   } catch (err) {

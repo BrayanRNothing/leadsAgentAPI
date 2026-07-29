@@ -6,43 +6,55 @@ const prisma = new PrismaClient();
 // 1. Endpoint para que n8n extraiga leads listos para enviar (Outbound)
 router.get('/leads-outbound', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const config = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
     
+    // Si la fase 2 global está desactivada, no enviar leads a n8n
+    if (!config?.globalActive || !config?.phase2Active) {
+      return res.json({ success: true, count: 0, leads: [], message: 'Fase 2 desactivada' });
+    }
+
+    // Verificar límite diario
+    const today = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().split("T")[0];
+    if (config.sentTodayDate !== today) {
+      await prisma.autoPilotConfig.update({ where: { id: 1 }, data: { sentTodayCount: 0, sentTodayDate: today } });
+      config.sentTodayCount = 0;
+    }
+
+    if (config.sentTodayCount >= config.dailyLimit) {
+      return res.json({ success: true, count: 0, leads: [], message: 'Límite diario alcanzado' });
+    }
+
+    // Límite por lote
+    let limit = parseInt(req.query.limit) || config.batchSize || 10;
+    const remaining = config.dailyLimit - config.sentTodayCount;
+    if (limit > remaining) limit = remaining;
+
     const leadsDb = await prisma.lead.findMany({
       where: {
-        pipelineState: 'CONTACTING',
+        pipelineState: 'NEW', 
         correo: { not: null }
-      },
-      include: {
-        mensajes: {
-          where: { estado: 'pending' },
-          include: { campana: true },
-          orderBy: { id: 'desc' }, // <- Cambiado a desc para tomar la campaña más reciente
-          take: 1
-        }
       },
       take: limit
     });
 
     const leads = leadsDb.map(l => {
-      const msg = l.mensajes[0];
-      let subject = 'Propuesta de Valor';
-      let body = `Hola ${l.nombre || 'Amigo'},\n\nNos gustaría conectar contigo.`;
+      let subject = config?.templateSubject || 'Propuesta de Valor';
+      let body = config?.templateHtml || `Hola ${l.nombre || 'Empresa'},\n\nNos gustaría conectar contigo.`;
       
-      if (msg && msg.campana) {
-        subject = msg.campana.asunto;
-        body = msg.campana.cuerpo.replace(/{{nombre}}/g, l.nombre || 'Amigo');
-      }
+      // Reemplazar la variable {{nombre_empresa}} por el nombre real del lead
+      body = body.replace(/{{nombre_empresa}}/g, l.nombre || 'Empresa');
+      subject = subject.replace(/{{nombre_empresa}}/g, l.nombre || 'Empresa');
 
       return {
         id: l.id,
         nombre: l.nombre,
         correo: l.correo,
         n8n_subject: subject,
-        n8n_body: body,
-        mensajeId: msg ? msg.id : null
+        n8n_body: body
       };
     });
+
+    res.json({ success: true, count: leads.length, leads });
 
     res.json({ success: true, count: leads.length, leads });
   } catch (error) {
@@ -60,8 +72,10 @@ router.post('/mark-sent', async (req, res) => {
     }
 
     const parsedLeadIds = leadIds.map(id => parseInt(id)).filter(id => !isNaN(id));
-
     const leads = await prisma.lead.findMany({ where: { id: { in: parsedLeadIds } } });
+    
+    // AutoPilot config for limits and history
+    const config = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
     
     for (const lead of leads) {
       let contactoEstado = lead.contactoEstado || { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" };
@@ -69,7 +83,6 @@ router.post('/mark-sent', async (req, res) => {
         try { contactoEstado = JSON.parse(contactoEstado); } catch(e) { contactoEstado = { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" }; }
       }
       
-      // Auto marcar el checkbox de correo enviado
       contactoEstado.correo = true;
       contactoEstado.estado = "Esperando respuesta";
 
@@ -79,6 +92,29 @@ router.post('/mark-sent', async (req, res) => {
           pipelineState: 'SENT',
           contactoEstado: contactoEstado
         }
+      });
+      
+      // Guardar en historial de correos enviado por n8n
+      let subject = config?.templateSubject || 'Propuesta de Valor';
+      let body = config?.templateHtml || `Hola ${lead.nombre || 'Empresa'},\n\nNos gustaría conectar contigo.`;
+      body = body.replace(/{{nombre_empresa}}/g, lead.nombre || 'Empresa');
+      subject = subject.replace(/{{nombre_empresa}}/g, lead.nombre || 'Empresa');
+
+      await prisma.emailMessage.create({
+        data: {
+          leadId: lead.id,
+          isIncoming: false,
+          subject: subject,
+          bodyText: body
+        }
+      });
+    }
+
+    // Incrementar limite diario del AutoPilot
+    if (leads.length > 0) {
+      await prisma.autoPilotConfig.update({
+        where: { id: 1 },
+        data: { sentTodayCount: { increment: leads.length } }
       });
     }
 
