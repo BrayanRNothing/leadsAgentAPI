@@ -84,35 +84,37 @@ export default function PipelineView({ onBack }) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans">
-      {/* HEADER PREMIUM */}
-      <div className="flex items-center justify-between p-5 px-8 relative z-10 bg-white border-b border-slate-200 shadow-sm">
-        <div className="flex items-center gap-5">
-          <button 
-            onClick={() => {
-              if (onBack) onBack();
-              else navigate('/');
-            }}
-            className="w-10 h-10 flex items-center justify-center text-slate-500 rounded-full hover:bg-slate-100 hover:text-slate-800 transition-colors"
-          >
-            <ArrowLeft size={22} />
-          </button>
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">CRM Pipeline</h1>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
-              Fuente: {dbMode === 'inegi' ? 'INEGI (DENUE)' : 'Google Maps'}
-            </p>
-          </div>
-        </div>
-
+    <div className="flex flex-col h-screen bg-[#e0e5ec] font-sans p-2 sm:p-4 overflow-hidden">
+      {/* HEADER COMPACTO CON BOTÓN CUADRADO (Estilo Scanner Maps) */}
+      <div 
+        className="flex items-center gap-4 p-3 mb-3 shrink-0 rounded-2xl"
+        style={{
+          background: '#e0e5ec',
+          boxShadow: '5px 5px 10px rgba(163,177,198,0.3), -5px -5px 10px rgba(255,255,255,0.7)'
+        }}
+      >
         <button 
-          onClick={fetchPipeline}
-          className="px-4 py-2 flex items-center gap-2 text-sm font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-200"
-          title="Actualizar Pipeline"
+          onClick={() => {
+            if (onBack) onBack();
+            else navigate('/');
+          }}
+          className="w-12 h-12 rounded-xl flex items-center justify-center transition-all shrink-0 group"
+          style={{
+            background: '#e0e5ec',
+            boxShadow: '4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.9)',
+          }}
+          onMouseDown={(e) => e.currentTarget.style.boxShadow = 'inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255,0.8)'}
+          onMouseUp={(e) => e.currentTarget.style.boxShadow = '4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.9)'}
+          onMouseLeave={(e) => e.currentTarget.style.boxShadow = '4px 4px 8px rgba(163,177,198,0.5), -4px -4px 8px rgba(255,255,255,0.9)'}
         >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          Actualizar
+          <ArrowLeft size={22} className="text-gray-600 group-hover:-translate-x-1 transition-transform" />
         </button>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-gray-800 m-0">Pipeline de Leads - Interesados</h2>
+          <span className="text-xs font-bold text-orange-600 bg-orange-100 px-3 py-1 rounded-full uppercase tracking-wider">
+            Fase 3
+          </span>
+        </div>
       </div>
 
       {/* BOARD KANBAN */}
