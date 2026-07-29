@@ -137,7 +137,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
         terminoBusqueda: expandedCat.termino,
         ubicacion: expandedCat.ubicacion === 'General' ? null : expandedCat.ubicacion,
         status: 'active',
-        pipelineState: 'CONTACTING'
+        pipelineState: 'NEW'
       };
       
       const res = await axios.post('https://leadsagentapi-production.up.railway.app/api/leads', newLead);
@@ -215,7 +215,7 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
             terminoBusqueda: expandedCat.termino,
             ubicacion: expandedCat.ubicacion === 'General' ? null : expandedCat.ubicacion,
             status: 'active',
-            pipelineState: 'CONTACTING'
+            pipelineState: 'NEW'
           };
           
           const res = await axios.post('https://leadsagentapi-production.up.railway.app/api/leads', lead);
@@ -405,41 +405,6 @@ export default function HistoryView({ onBack, dbMode = 'maps' }) {
                   </div>
 
                   <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="flex gap-1 p-1 rounded-xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] flex-wrap">
-                      <button
-                        onClick={() => setFilterCategoria('all')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterCategoria === 'all' ? 'bg-white shadow-[3px_3px_6px_rgba(163,177,198,0.4)] text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        Todos
-                      </button>
-                      {dbMode === 'inegi' ? (
-                        uniqueInegiCategories.map(cat => (
-                          <button
-                            key={cat}
-                            onClick={() => setFilterCategoria(cat)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterCategoria === cat ? 'bg-white shadow-[3px_3px_6px_rgba(163,177,198,0.4)] text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                          >
-                            {cat}
-                          </button>
-                        ))
-                      ) : (
-                        ['Google Maps', 'Facebook'].map(fuente => {
-                          const label = fuente === 'Google Maps' ? 'Maps' : fuente;
-                          const filterValue = fuente === 'Google Maps' ? 'maps' : fuente.toLowerCase();
-                          const isActive = filterCategoria === filterValue;
-                          return (
-                            <button
-                              key={fuente}
-                              onClick={() => setFilterCategoria(filterValue)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive ? 'bg-white shadow-[3px_3px_6px_rgba(163,177,198,0.4)] text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowManualLeadModal(true); }}

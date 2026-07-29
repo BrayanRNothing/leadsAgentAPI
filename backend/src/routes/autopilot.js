@@ -107,5 +107,18 @@ router.post('/stop', async (req, res) => {
     res.status(500).json({ error: 'Error stopping autopilot' });
   }
 });
+// POST /api/autopilot/clear-queue - Mark all pending as SENT
+router.post('/clear-queue', async (req, res) => {
+  try {
+    const result = await prisma.lead.updateMany({
+      where: { pipelineState: 'NEW', correo: { not: null } },
+      data: { pipelineState: 'SENT' }
+    });
+    res.json({ message: `Se marcaron ${result.count} leads como enviados para limpiar la cola.` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error clearing queue' });
+  }
+});
 
 module.exports = router;

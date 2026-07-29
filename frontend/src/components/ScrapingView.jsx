@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useScraping } from '../context/ScrapingContext';
 import axios from 'axios';
-import { Search, Loader2, Download, FileJson, CheckCircle, Phone, Globe, Mail, AlertTriangle, XCircle, Clock, WifiOff, ArrowLeft, Navigation, Plus, Minus, Database, Link as LinkIcon, Filter, X } from 'lucide-react';
+import { Search, Loader2, Download, FileJson, CheckCircle, Phone, Globe, Mail, AlertTriangle, XCircle, Clock, WifiOff, ArrowLeft, Navigation, Plus, Minus, Database, Link as LinkIcon, Filter, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MapView from './MapView';
 
@@ -115,10 +115,30 @@ export default function ScrapingView({ onBack }) {
     cityGeoJSON, setCityGeoJSON,
     selectedLead, setSelectedLead,
     loading, setLoading,
-    logs, setLogs, pipelineStats, setPipelineStats,
     eventSourceRef,
     safetyTimeoutRef
   } = useScraping();
+
+  const [autopilotStatus, setAutopilotStatus] = useState(null);
+
+  useEffect(() => {
+    let interval;
+    const fetchAp = async () => {
+      try {
+        const res = await fetch('https://leadsagentapi-production.up.railway.app/api/autopilot/status');
+        if (res.ok) {
+          const data = await res.json();
+          setAutopilotStatus(prev => {
+            if (!prev) return data;
+            return JSON.stringify(prev) === JSON.stringify(data) ? prev : data;
+          });
+        }
+      } catch (e) {}
+    };
+    fetchAp();
+    interval = setInterval(fetchAp, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const logsEndRef = useRef(null);
 
@@ -944,62 +964,70 @@ export default function ScrapingView({ onBack }) {
               />
             </>
           ) : (
-            <div className="w-full h-full min-h-[450px] flex flex-col gap-3 font-mono text-[11px]">
-              {/* Bot Central (Engine) */}
-              <div className="flex-1 min-h-[120px] flex flex-col bg-white rounded-xl overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border border-gray-200">
-                <div className="bg-gray-50 px-3 py-1.5 flex items-center justify-between border-b border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
-                    <span className="text-blue-700 font-bold">🤖 Orquestador Principal</span>
+            <div className="w-full h-full min-h-[450px] flex flex-col items-center justify-center gap-6 p-4 sm:p-8 relative overflow-hidden"
+                 style={{ background: '#e0e5ec', boxShadow: 'inset 4px 4px 8px rgba(163,177,198,0.3), inset -4px -4px 8px rgba(255,255,255,0.8)' }}>
+              
+              <div className="flex flex-col items-center max-w-md w-full gap-4 z-10">
+                <h3 className="text-lg font-black text-gray-800 mb-2">Progreso de Recolección</h3>
+                
+                {/* Paso 1: Recolección */}
+                <div className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${scanPhase === 'maps' || scanPhase === 'enrichment' || scanPhase === 'idle' ? 'opacity-100' : 'opacity-50'}`} style={{ background: '#e0e5ec', boxShadow: '5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.9)' }}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${scanPhase === 'maps' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                     {scanPhase === 'maps' ? <Search size={20} className="text-blue-500 animate-pulse" /> : <CheckCircle size={20} className="text-green-500" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-700 text-sm">Buscando Leads...</div>
+                    <div className="text-xs text-gray-500">{results.length} / {quantity} encontrados</div>
                   </div>
                 </div>
-                <div className="flex-1 p-2 overflow-y-auto bg-white text-gray-700 space-y-1 flex flex-col-reverse">
-                  {logs.filter(l => l.includes('[Engine]') || l.includes('[Filtro]')).reverse().map((log, i) => (
-                    <div key={i} className="flex gap-2 hover:bg-gray-50 px-1 rounded">
-                      <span className="text-gray-400 select-none shrink-0">{`[${new Date().toLocaleTimeString('es-MX', { hour12: false })}]`}</span>
-                      <span className="break-words flex-1 leading-relaxed text-blue-800">{log}</span>
-                    </div>
-                  ))}
-                  {logs.length === 0 && <div className="text-gray-400 italic px-1">Esperando inicio...</div>}
-                </div>
-              </div>
 
-              {/* Bot Esteban (Maps) */}
-              <div className="flex-1 min-h-[120px] flex flex-col bg-white rounded-xl overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border border-gray-200">
-                <div className="bg-gray-50 px-3 py-1.5 flex items-center justify-between border-b border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></div>
-                    <span className="text-orange-700 font-bold">📍 Bot Esteban (Buscador)</span>
+                {/* Paso 2: Análisis (Enrichment) */}
+                <div className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${scanPhase === 'enrichment' ? 'opacity-100 scale-105 border border-indigo-200' : (scanPhase === 'idle' && results.length > 0 ? 'opacity-100' : 'opacity-40')}`} style={{ background: '#e0e5ec', boxShadow: '5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.9)' }}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${scanPhase === 'enrichment' ? 'bg-indigo-100' : (scanPhase === 'idle' && results.length > 0 ? 'bg-green-100' : 'bg-gray-200')}`}>
+                     {scanPhase === 'enrichment' ? <Globe size={20} className="text-indigo-500 animate-pulse" /> : (scanPhase === 'idle' && results.length > 0 ? <CheckCircle size={20} className="text-green-500" /> : <Loader2 size={20} className="text-gray-400" />)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-700 text-sm">Analizando y Filtrando</div>
+                    <div className="text-xs text-gray-500">{scanPhase === 'enrichment' ? 'Visitando sitios web...' : (scanPhase === 'idle' && results.length > 0 ? 'Análisis completado' : 'En espera')}</div>
                   </div>
                 </div>
-                <div className="flex-1 p-2 overflow-y-auto bg-white text-gray-700 space-y-1 flex flex-col-reverse">
-                  {logs.filter(l => l.includes('[Maps]')).reverse().map((log, i) => (
-                    <div key={i} className="flex gap-2 hover:bg-gray-50 px-1 rounded">
-                      <span className="text-gray-400 select-none shrink-0">{`[${new Date().toLocaleTimeString('es-MX', { hour12: false })}]`}</span>
-                      <span className="break-words flex-1 leading-relaxed text-orange-800">{log}</span>
-                    </div>
-                  ))}
-                  {logs.length === 0 && <div className="text-gray-400 italic px-1">En espera...</div>}
-                </div>
-              </div>
 
-              {/* Bot Pedrito (Enrichment) */}
-              <div className="flex-1 min-h-[120px] flex flex-col bg-white rounded-xl overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border border-gray-200">
-                <div className="bg-gray-50 px-3 py-1.5 flex items-center justify-between border-b border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-green-700 font-bold">🌐 Bot Pedrito (Analista Web)</span>
-                  </div>
-                </div>
-                <div className="flex-1 p-2 overflow-y-auto bg-white text-gray-700 space-y-1 flex flex-col-reverse">
-                  {logs.filter(l => l.includes('[Enrichment]') || l.includes('[BD]')).reverse().map((log, i) => (
-                    <div key={i} className="flex gap-2 hover:bg-gray-50 px-1 rounded">
-                      <span className="text-gray-400 select-none shrink-0">{`[${new Date().toLocaleTimeString('es-MX', { hour12: false })}]`}</span>
-                      <span className="break-words flex-1 leading-relaxed text-green-800">{log}</span>
+                {/* Paso 3: Auto-Piloto (Cola) */}
+                <div className={`w-full p-4 rounded-2xl flex flex-col gap-3 transition-all ${scanPhase === 'idle' && results.length > 0 ? 'opacity-100 scale-105 border border-green-200' : 'opacity-40'}`} style={{ background: '#e0e5ec', boxShadow: '5px 5px 10px rgba(163,177,198,0.5), -5px -5px 10px rgba(255,255,255,0.9)' }}>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${scanPhase === 'idle' && results.length > 0 ? 'bg-green-100' : 'bg-gray-200'}`}>
+                      {scanPhase === 'idle' && results.length > 0 ? <Send size={20} className="text-green-500 animate-pulse" /> : <Mail size={20} className="text-gray-400" />}
                     </div>
-                  ))}
-                  {logs.length === 0 && <div className="text-gray-400 italic px-1">En espera...</div>}
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-700 text-sm">Enviando a Proceso</div>
+                      <div className="text-xs text-gray-500">{scanPhase === 'idle' && results.length > 0 ? 'Leads en base de datos listos' : 'En espera'}</div>
+                    </div>
+                  </div>
+                  
+                  {scanPhase === 'idle' && results.length > 0 && autopilotStatus && (
+                    <div className="mt-2 pt-3 border-t border-gray-300 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-xs font-bold text-gray-600">
+                        <span>Cola de envío activa:</span>
+                        <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{autopilotStatus.counts?.inProcess || 0} pendientes</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs font-bold text-gray-600">
+                        <span>Correos enviados hoy:</span>
+                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{autopilotStatus.sentTodayCount || 0} / {autopilotStatus.dailyLimit}</span>
+                      </div>
+                      {autopilotStatus.globalActive && autopilotStatus.phase2Active ? (
+                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-1 bg-white/50 p-2 rounded-lg">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                          <span>Procesando envíos gradualmente en segundo plano...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[10px] text-red-500 mt-1 bg-red-50 p-2 rounded-lg font-bold">
+                          <AlertTriangle size={12} /> Auto-Piloto pausado. Actívalo en el Panel.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
               </div>
             </div>
           )}

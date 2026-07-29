@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
-import { Search, Database, LogOut, ArrowLeft, Radar, MapPin, Users, Flame, ArrowDown, Mail, Phone, Play } from 'lucide-react';
+import { Search, Database, LogOut, ArrowLeft, Radar, MapPin, Users, Flame, ArrowDown, Mail, Phone, Play, Send, BotMessageSquare, Sparkles } from 'lucide-react';
 import LoginSquare from './LoginSquare';
 import ScrapingView from './ScrapingView';
 import HistoryView from './HistoryView';
@@ -128,8 +128,15 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
     const checkBot = () => {
       fetch('https://leadsagentapi-production.up.railway.app/api/autopilot/config')
         .then(r => r.json())
-        .then(d => setAutoPilotConfig(d))
-        .catch(e => console.error(e));
+        .then(d => {
+          setAutoPilotConfig(prev => {
+            if (!prev) return d;
+            return JSON.stringify(prev) === JSON.stringify(d) ? prev : d;
+          });
+        })
+        .catch(e => {
+          // Fallo silencioso en caso de pérdida de conexión
+        });
     };
     checkBot();
     const interval = setInterval(checkBot, 5000);
@@ -195,55 +202,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
     </motion.div>
   );
 
-  const AnimatedBotVisualizer = ({ config }) => {
-    if (!config || !config.globalActive) return null;
-    return (
-      <motion.div 
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
-        className="w-full mt-6 p-4 rounded-2xl flex flex-col gap-2 relative z-10"
-        style={{
-          background: '#e0e5ec',
-          boxShadow: 'inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)'
-        }}
-      >
-        <div className="flex items-center gap-2 text-indigo-600 mb-2">
-          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></div>
-          <span className="text-[11px] font-black uppercase tracking-widest">Bot Ejecutando Tareas...</span>
-        </div>
-        
-        <div className="flex flex-col gap-2 font-mono text-[10px] sm:text-xs text-gray-700">
-          {config.phase1Active && (
-            <>
-              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3 }}>
-                <span className="text-blue-500 font-bold">[Fase 1]</span> Buscando leads calificados en INEGI...
-              </motion.div>
-              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3, delay: 0.8 }} className="text-gray-500">
-                {'>'} Leads enviados a "En Proceso" [OK]
-              </motion.div>
-            </>
-          )}
 
-          {config.phase2Active && (
-            <>
-              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3, delay: 1.6 }}>
-                <span className="text-indigo-500 font-bold">[Fase 2]</span> n8n procesando envíos en lote...
-              </motion.div>
-              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ repeat: Infinity, duration: 3, delay: 2.4 }} className="text-green-600 font-bold">
-                {'>'} Correo enviado con éxito. Respetando cooldown...
-              </motion.div>
-            </>
-          )}
-
-          {config.phase3Active && (
-            <motion.div initial={{ opacity: 0.5 }} animate={{ opacity: 1 }} transition={{ repeat: Infinity, duration: 1.5, direction: "reverse" }} className="mt-1">
-              <span className="text-amber-500 font-bold">[Fase 3]</span> 🤖 IA a la escucha de nuevas respuestas en bandeja...
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
-    );
-  };
 
   return (
     <div className="relative w-full flex flex-col items-center justify-center min-h-screen py-10 px-4">
@@ -293,45 +252,102 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                   {/* Pipeline Principal (Centrado) */}
                   <div className="w-full flex flex-col items-center">
                     <h2 className="text-xs sm:text-sm font-black text-teal-600 uppercase tracking-widest mb-6 text-center">Pipeline Principal</h2>
-                    <div className="flex justify-center items-center w-full max-w-3xl">
-                      <div className="flex-1 max-w-[140px]">
-                        <PipelineNode 
-                          id="inegi"
-                          title="Base de Datos"
-                          icon={<Database size={24} color="#38b2ac" />}
-                          route="/inegi"
-                          delay={0.1}
-                        />
-                      </div>
-                      <AnimatedArrow delay={0.3} />
-                      <div className="flex-1 max-w-[140px]">
-                        <PipelineNode 
-                          id="history-inegi"
-                          title="En Proceso"
-                          icon={<Users size={24} color="#38b2ac" />}
-                          count={stats.inegiLeads}
-                          color="#38b2ac"
-                          route="/history/inegi"
-                          delay={0.4}
-                        />
-                        <div className="flex justify-center gap-2 mt-2" style={{ opacity: stats.inegiLeads !== undefined ? 1 : 0 }}>
-                          <span className="text-[9px] font-bold text-gray-500 uppercase">{stats.inegiNew || 0} Cola</span>
-                          <span className="text-[9px] font-bold text-indigo-500 uppercase">{stats.inegiSent || 0} Env.</span>
+                    {(() => {
+                      const pipelineStats = [
+                        { id: 'database', title: 'Base de Datos', count: stats?.inegiNew, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
+                        { id: 'process', title: 'En Proceso', count: stats?.inegiSent, icon: <Send size={24} color="#10b981" />, color: '#10b981', phase: 'SENT', route: '/history/inegi' },
+                        { id: 'interested', title: 'Respuestas', count: stats?.inegiInterested, icon: <Flame size={24} color="#f59e0b" />, color: '#f59e0b', phase: 'REPLIED', route: '/pipeline/inegi' },
+                      ];
+                      return (
+                        <div className="flex flex-col sm:flex-row items-center sm:items-end justify-center gap-10 sm:gap-4 mb-12">
+                          {pipelineStats.map((stat, idx) => {
+                            let statusText = null;
+                            let statusActive = false;
+                            let extraData = null;
+                            
+                            // Caja 1: Base de Datos (Fase 1)
+                            if (idx === 0) {
+                              const p1 = autoPilotConfig?.phase1Active && autoPilotConfig?.globalActive;
+                              if (p1) {
+                                statusActive = true;
+                                if (stat.count === 0) {
+                                  statusText = "Buscando en INEGI...";
+                                } else {
+                                  statusText = "En reposo (Lote listo)";
+                                }
+                              } else {
+                                statusText = "Fase 1 inactiva";
+                              }
+                            }
+                            
+                            // Caja 2: En Proceso (Fase 2)
+                            if (idx === 1) {
+                              const p2 = autoPilotConfig?.phase2Active && autoPilotConfig?.globalActive;
+                              if (p2) {
+                                if (pipelineStats[0].count > 0) {
+                                  statusActive = true;
+                                  statusText = "Enviando en cola...";
+                                } else {
+                                  statusText = "En reposo (0 en cola)";
+                                }
+                                extraData = (
+                                  <span className="text-[9px] font-black uppercase text-indigo-600">
+                                    {autoPilotConfig?.sentTodayCount || 0}/{autoPilotConfig?.dailyLimit || 200} ENV.
+                                  </span>
+                                );
+                              } else {
+                                statusText = "Fase 2 inactiva";
+                              }
+                            }
+                            
+                            // Caja 3: Respuestas (Fase 3)
+                            if (idx === 2) {
+                              const p3 = autoPilotConfig?.phase3Active && autoPilotConfig?.globalActive;
+                              if (p3) {
+                                statusActive = true;
+                                statusText = "IA Escuchando...";
+                              } else {
+                                statusText = "Fase 3 inactiva";
+                              }
+                            }
+
+                            return (
+                              <React.Fragment key={stat.id}>
+                                <div className="flex flex-col items-center">
+                                  {/* Label / Status above card */}
+                                  <div className="h-10 sm:h-12 flex flex-col justify-end items-center mb-2">
+                                    <span className={`text-[10px] font-bold ${statusActive ? 'text-indigo-600 animate-pulse' : 'text-gray-400'} text-center whitespace-nowrap`}>
+                                      {statusText}
+                                    </span>
+                                    {extraData && <div className="mt-0.5 whitespace-nowrap">{extraData}</div>}
+                                  </div>
+
+                                  {/* Card */}
+                                  <div className="w-28 sm:w-36">
+                                    <PipelineNode 
+                                      id={stat.id}
+                                      title={stat.title} 
+                                      count={stat.count} 
+                                      icon={stat.icon} 
+                                      color={stat.color} 
+                                      delay={idx * 0.2} 
+                                      route={stat.route}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Arrow between cards */}
+                                {idx < pipelineStats.length - 1 && (
+                                  <div className="hidden sm:flex items-center justify-center h-32 sm:h-[136px] self-end mx-2">
+                                    <AnimatedArrow delay={idx * 0.2 + 0.1} />
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                         </div>
-                      </div>
-                      <AnimatedArrow delay={0.6} />
-                      <div className="flex-1 max-w-[140px]">
-                        <PipelineNode 
-                          id="hot-inegi"
-                          title="Interesados"
-                          icon={<Flame size={24} color="#ed8936" />}
-                          count={stats.inegiInterested || 0}
-                          color="#ed8936"
-                          route="/pipeline/inegi"
-                          delay={0.7}
-                        />
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Auto-Piloto Integrado (Más compacto y visual) */}
@@ -364,11 +380,6 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                         </span>
                       </div>
                     </motion.div>
-
-                    {/* Animación visual del bot trabajando */}
-                    <div className="w-full max-w-md">
-                      <AnimatedBotVisualizer config={autoPilotConfig} />
-                    </div>
                   </div>
 
                 </div>

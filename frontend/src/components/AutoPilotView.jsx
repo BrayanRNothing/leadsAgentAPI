@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Save, AlertCircle, Database, Send, BotMessageSquare, Mail, Settings, Bot, Activity, CheckCircle2, Users, Inbox } from "lucide-react";
 
 const API = "https://leadsagentapi-production.up.railway.app";
@@ -28,8 +28,16 @@ export default function AutoPilotView({ onBack }) {
   const fetchStatus = async () => {
     try {
       const res = await fetch(`${API}/api/autopilot/status`);
-      if (res.ok) setStatus(await res.json());
-    } catch (_) {}
+      if (res.ok) {
+        const data = await res.json();
+        setStatus(prev => {
+          if (!prev) return data;
+          return JSON.stringify(prev) === JSON.stringify(data) ? prev : data;
+        });
+      }
+    } catch (_) {
+      // Fallo silencioso de red
+    }
   };
 
   const startPolling = () => {
@@ -146,11 +154,31 @@ export default function AutoPilotView({ onBack }) {
               <Activity size={13} className={isActive ? "text-green-500" : "text-gray-400"} />
               {isActive ? "Sistema activo — datos en vivo cada 4s" : "Sistema detenido"}
             </h3>
-            {status && (
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                {status.sentTodayCount}/{status.dailyLimit} enviados hoy
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if(window.confirm("¿Seguro que deseas marcar todos los leads pendientes en cola como ENVIADOS? Usa esto solo si hubo un error y se quedaron atascados.")) {
+                    try {
+                      const res = await fetch(`${API}/api/autopilot/clear-queue`, { method: 'POST' });
+                      const data = await res.json();
+                      setFeedback({ type: "success", msg: data.message });
+                      fetchStatus();
+                    } catch (e) {
+                      setFeedback({ type: "error", msg: "Error al limpiar cola" });
+                    }
+                  }
+                }}
+                className="text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors"
+              >
+                Limpiar Cola Atascada
+              </button>
+              {status && (
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+                  {status.sentTodayCount}/{status.dailyLimit} enviados hoy
+                </span>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             <StatBox icon={<Database size={15}/>} label="En Cola" value={counts.inProcess} color="text-blue-500" />

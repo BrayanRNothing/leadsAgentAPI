@@ -31,30 +31,42 @@ router.get('/leads-outbound', async (req, res) => {
 
     const leadsDb = await prisma.lead.findMany({
       where: {
-        pipelineState: 'NEW', 
+        pipelineState: { in: ['NEW', 'CONTACTING'] }, 
         correo: { not: null }
       },
       take: limit
     });
 
-    const leads = leadsDb.map(l => {
-      let subject = config?.templateSubject || 'Propuesta de Valor';
-      let body = config?.templateHtml || `Hola ${l.nombre || 'Empresa'},\n\nNos gustaría conectar contigo.`;
-      
-      // Reemplazar la variable {{nombre_empresa}} por el nombre real del lead
+    const leads = [];
+    for (const l of leadsDb) {
+      const pendingMessage = await prisma.leadMensaje.findFirst({
+        where: { leadId: l.id, estado: 'pending' },
+        include: { campana: true }
+      });
+
+      let subject, body, mensajeId = null;
+
+      if (pendingMessage && pendingMessage.campana) {
+        subject = pendingMessage.campana.asunto;
+        body = pendingMessage.campana.cuerpo;
+        mensajeId = pendingMessage.id;
+      } else {
+        subject = config?.templateSubject || 'Propuesta de Valor';
+        body = config?.templateHtml || `Hola ${l.nombre || 'Empresa'},\n\nNos gustaría conectar contigo.`;
+      }
+
       body = body.replace(/{{nombre_empresa}}/g, l.nombre || 'Empresa');
       subject = subject.replace(/{{nombre_empresa}}/g, l.nombre || 'Empresa');
 
-      return {
+      leads.push({
         id: l.id,
         nombre: l.nombre,
         correo: l.correo,
         n8n_subject: subject,
-        n8n_body: body
-      };
-    });
-
-    res.json({ success: true, count: leads.length, leads });
+        n8n_body: body,
+        mensajeId: mensajeId
+      });
+    }
 
     res.json({ success: true, count: leads.length, leads });
   } catch (error) {
@@ -282,6 +294,9 @@ router.post('/webhooks/email-reply', async (req, res) => {
         case 'INVALID': nextState = 'INVALID'; break;
         default: nextState = 'REPLIED';
       }
+    } else if (phase3Active) {
+      // Si la IA falló por falta de tokens o red, requiere revisión humana
+      nextState = 'REQUIRES_HUMAN';
     }
 
     let contactoActual = {};
