@@ -352,7 +352,53 @@ router.post('/webhooks/email-reply', async (req, res) => {
     });
   } catch (error) {
     console.error('Error en webhook de respuesta:', error);
-    res.status(500).json({ success: false, error: 'Error interno', details: error.message, stack: error.stack });
+    res.status(500).json({ success: false, error: 'Error interno', details: error.message });
+  }
+});
+
+router.get('/debug-status', async (req, res) => {
+  try {
+    const leadStates = await prisma.lead.groupBy({
+      by: ['pipelineState'],
+      _count: { id: true }
+    });
+
+    const pendingLeads = await prisma.lead.findMany({
+      where: {
+        pipelineState: { in: ['NEW', 'CONTACTING'] }
+      },
+      select: {
+        id: true,
+        nombre: true,
+        correo: true,
+        pipelineState: true
+      },
+      take: 10
+    });
+
+    const pendingMessages = await prisma.leadMensaje.findMany({
+      where: { estado: 'pending' },
+      include: {
+        lead: { select: { nombre: true, correo: true } },
+        campana: { select: { nombre: true, asunto: true } }
+      },
+      take: 10
+    });
+
+    const lastEmails = await prisma.emailMessage.findMany({
+      orderBy: { creadoEn: 'desc' },
+      take: 10
+    });
+
+    res.json({
+      success: true,
+      leadStates,
+      pendingLeads,
+      pendingMessages,
+      lastEmails
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
