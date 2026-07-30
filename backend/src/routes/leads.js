@@ -10,7 +10,7 @@ router.get('/categorias', async (req, res) => {
       by: ['terminoBusqueda', 'ubicacion'],
       where: {
         status: { not: 'discarded' },
-        pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED'] }
+        pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED', 'INVALID', 'REQUIRES_HUMAN', 'MEETING_BOOKED'] }
       },
       _count: {
         _all: true
@@ -38,7 +38,7 @@ router.get('/categorias/:termino/leads', async (req, res) => {
     const { ubicacion } = req.query;
 
     const whereObj = {
-      pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED'] }
+      pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED', 'INVALID', 'REQUIRES_HUMAN', 'MEETING_BOOKED'] }
     };
     
     if (termino !== 'ALL') {
