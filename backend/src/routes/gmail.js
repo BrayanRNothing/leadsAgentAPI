@@ -1,62 +1,65 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../prisma');
-const { google } = require('googleapis');
+const nodemailer = require('nodemailer');
 
-const getOAuthClient = () => {
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  );
-};
-
-router.get('/auth', (req, res) => {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return res.status(500).json({ error: 'Faltan credenciales de Google en el .env' });
+// POST /api/gmail/connect - Guardar credenciales de correo y contraseña de aplicación
+router.post('/connect', async (req, res) => {
+  const { email, appPassword } = req.body;
+  if (!email || !appPassword) {
+    return res.status(400).json({ error: 'El correo y la contraseña de aplicación son obligatorios' });
   }
-  const oauth2Client = getOAuthClient();
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.modify'],
-    prompt: 'consent'
-  });
-  res.json({ url });
-});
 
-router.get('/callback', async (req, res) => {
-  const code = req.query.code;
-  if (!code) return res.status(400).send('No code');
+  // Quitar espacios que a veces la gente copia con la contraseña de aplicación de Google
+  const cleanPassword = appPassword.replace(/\s+/g, '');
+
   try {
-    const oauth2Client = getOAuthClient();
-    const { tokens } = await oauth2Client.getToken(code);
+    // Probar la conexión antes de guardar en la base de datos
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: email,
+        pass: cleanPassword
+      }
+    });
+
+    await transporter.verify();
+
+    // Guardar en la base de datos usando las columnas existentes
     await prisma.autoPilotConfig.upsert({
       where: { id: 1 },
       update: {
-        gmailAccessToken: tokens.access_token,
-        gmailRefreshToken: tokens.refresh_token || undefined
+        gmailAccessToken: email,
+        gmailRefreshToken: cleanPassword
       },
       create: {
         id: 1,
-        gmailAccessToken: tokens.access_token,
-        gmailRefreshToken: tokens.refresh_token
+        gmailAccessToken: email,
+        gmailRefreshToken: cleanPassword
       }
     });
-    res.send('<html><body><h2>✅ Gmail Conectado Exitosamente</h2><p>Cierra esta ventana.</p><script>setTimeout(() => { window.close(); }, 3000);</script></body></html>');
+
+    res.json({ success: true, message: 'Gmail conectado exitosamente.' });
   } catch (error) {
-    console.error('Callback error:', error);
-    res.status(500).send('Error');
+    console.error('Error verificando credenciales de Gmail:', error);
+    res.status(400).json({
+      error: 'No se pudo conectar a Gmail. Verifica tu correo y que tu Contraseña de Aplicación de 16 caracteres sea correcta.'
+    });
   }
 });
 
+// GET /api/gmail/status - Ver si Gmail está conectado
 router.get('/status', async (req, res) => {
   try {
     const config = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
-    const isConnected = Boolean(config?.gmailRefreshToken || config?.gmailAccessToken);
-    res.json({ isConnected });
-  } catch (error) { res.status(500).json({ error: 'Error' }); }
+    const isConnected = Boolean(config?.gmailRefreshToken && config?.gmailAccessToken);
+    res.json({ isConnected, email: config?.gmailAccessToken });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener estado de Gmail' });
+  }
 });
 
+// POST /api/gmail/disconnect - Desconectar Gmail
 router.post('/disconnect', async (req, res) => {
   try {
     await prisma.autoPilotConfig.update({
@@ -64,7 +67,9 @@ router.post('/disconnect', async (req, res) => {
       data: { gmailAccessToken: null, gmailRefreshToken: null }
     });
     res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: 'Error' }); }
+  } catch (error) {
+    res.status(500).json({ error: 'Error al desconectar Gmail' });
+  }
 });
 
 module.exports = router;

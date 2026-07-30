@@ -27,6 +27,7 @@
     "groq-sdk": "^1.4.0",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^9.0.3",
     "pg": "^8.22.0",
     "puppeteer": "^25.3.0",
     "puppeteer-extra": "^3.3.6",

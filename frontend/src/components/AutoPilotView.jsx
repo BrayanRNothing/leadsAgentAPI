@@ -11,6 +11,8 @@ export default function AutoPilotView({ onBack }) {
   const [feedback, setFeedback] = useState(null);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailLoading, setGmailLoading] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState("");
+  const [gmailAppPassword, setGmailAppPassword] = useState("");
   const pollRef = useRef(null);
 
   useEffect(() => {
@@ -25,48 +27,39 @@ export default function AutoPilotView({ onBack }) {
       const res = await fetch(`${API}/api/gmail/status`);
       const data = await res.json();
       setGmailConnected(data.isConnected);
+      if (data.isConnected && data.email) {
+        setGmailEmail(data.email);
+      }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleConnectGmail = async () => {
+  const handleConnectGmail = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!gmailEmail || !gmailAppPassword) {
+      alert("Por favor ingresa tu correo de Gmail y Contraseña de Aplicación de 16 caracteres.");
+      return;
+    }
     setGmailLoading(true);
     try {
-      const res = await fetch(`${API}/api/gmail/auth`);
+      const res = await fetch(`${API}/api/gmail/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: gmailEmail, appPassword: gmailAppPassword })
+      });
       const data = await res.json();
-      if (data.url) {
-        const width = 600, height = 600;
-        const left = window.screenX + (window.outerWidth - width) / 2;
-        const top = window.screenY + (window.outerHeight - height) / 2;
-        const popup = window.open(data.url, 'Conectar Gmail', `width=${width},height=${height},left=${left},top=${top}`);
-        
-        const timer = setInterval(async () => {
-          if (!popup || popup.closed) {
-            clearInterval(timer);
-            setGmailLoading(false);
-          }
-          try {
-            const checkRes = await fetch(`${API}/api/gmail/status`);
-            const checkData = await checkRes.json();
-            if (checkData.isConnected) {
-              setGmailConnected(true);
-              clearInterval(timer);
-              setGmailLoading(false);
-              if (popup) popup.close();
-              setFeedback({ type: "success", msg: "Gmail conectado exitosamente." });
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }, 1500);
+      if (res.ok) {
+        setGmailConnected(true);
+        setGmailAppPassword(""); // Limpiar la contraseña
+        setFeedback({ type: "success", msg: data.message });
       } else {
-        alert("No se pudo obtener la URL de autenticación de Gmail.");
-        setGmailLoading(false);
+        alert(data.error || "Error al conectar Gmail");
       }
     } catch (error) {
       console.error(error);
-      alert("Error al intentar conectar con Gmail.");
+      alert("Ocurrió un error al intentar conectar con Gmail.");
+    } finally {
       setGmailLoading(false);
     }
   };
@@ -78,6 +71,8 @@ export default function AutoPilotView({ onBack }) {
       const res = await fetch(`${API}/api/gmail/disconnect`, { method: 'POST' });
       if (res.ok) {
         setGmailConnected(false);
+        setGmailEmail("");
+        setGmailAppPassword("");
         setFeedback({ type: "success", msg: "Gmail desconectado." });
       }
     } catch (error) {
@@ -309,17 +304,19 @@ export default function AutoPilotView({ onBack }) {
             {/* Conexión de Gmail */}
             <div className="p-4 rounded-2xl flex flex-col gap-3" style={{ background: "#e0e5ec", boxShadow: nf }}>
               <h3 className="text-[11px] font-black text-gray-700 border-b border-gray-300 pb-2 flex items-center gap-1.5">
-                <Mail size={12} className={gmailConnected ? "text-indigo-600" : "text-gray-400"} />
+                <Mail size={12} className={gmailConnected ? "text-indigo-600 animate-pulse" : "text-gray-400"} />
                 Conectividad con Gmail
               </h3>
-              <div className="flex items-center justify-between py-1">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black text-gray-500 uppercase">Estado de Conexión</span>
-                  <span className={`text-xs font-black ${gmailConnected ? "text-green-600" : "text-red-500"}`}>
-                    {gmailConnected ? "CONECTADO ✓" : "DESCONECTADO ✗"}
-                  </span>
-                </div>
-                {gmailConnected ? (
+              
+              {gmailConnected ? (
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] font-black text-gray-500 uppercase">Estado de Conexión</span>
+                    <span className="text-xs font-black text-green-600">
+                      CONECTADO ✓
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-700">{gmailEmail}</span>
+                  </div>
                   <button
                     type="button"
                     disabled={gmailLoading}
@@ -328,20 +325,57 @@ export default function AutoPilotView({ onBack }) {
                   >
                     Desconectar cuenta
                   </button>
-                ) : (
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-gray-600 uppercase">Correo Remitente (Gmail)</label>
+                    <input
+                      type="email"
+                      placeholder="ejemplo@gmail.com"
+                      value={gmailEmail}
+                      onChange={e => setGmailEmail(e.target.value)}
+                      className="w-full bg-transparent border-none outline-none text-gray-800 font-medium text-xs px-3 py-2 rounded-xl"
+                      style={{ boxShadow: ni }}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[9px] font-bold text-gray-600 uppercase">Contraseña de Aplicación de 16 caracteres</label>
+                      <a 
+                        href="https://myaccount.google.com/apppasswords" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[9px] text-indigo-600 font-black hover:underline"
+                      >
+                        ¿Cómo obtenerla?
+                      </a>
+                    </div>
+                    <input
+                      type="password"
+                      placeholder="xxxx xxxx xxxx xxxx"
+                      value={gmailAppPassword}
+                      onChange={e => setGmailAppPassword(e.target.value)}
+                      className="w-full bg-transparent border-none outline-none text-gray-800 font-mono text-xs px-3 py-2 rounded-xl"
+                      style={{ boxShadow: ni }}
+                    />
+                  </div>
+
                   <button
                     type="button"
                     disabled={gmailLoading}
                     onClick={handleConnectGmail}
-                    className="px-3 py-1.5 rounded-xl text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-md shadow-indigo-100"
+                    className="mt-1.5 w-full py-2 rounded-xl text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-md shadow-indigo-100"
                   >
                     <Mail size={11} />
-                    {gmailLoading ? "Conectando..." : "Conectar Gmail"}
+                    {gmailLoading ? "Verificando y Conectando..." : "Verificar y Conectar Gmail"}
                   </button>
-                )}
-              </div>
-              <p className="text-[9px] text-gray-500 leading-snug">
-                Conecta tu cuenta de Google para poder enviar correos y respuestas directas usando tu propia dirección.
+                </div>
+              )}
+              
+              <p className="text-[9px] text-gray-500 leading-snug pt-1.5 border-t border-gray-200">
+                Se requiere una <strong>Contraseña de Aplicación</strong> de Google (no la contraseña normal). Obténla en tu cuenta Google {`->`} Seguridad {`->`} Contraseñas de aplicación.
               </p>
             </div>
 
