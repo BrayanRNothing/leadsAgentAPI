@@ -358,47 +358,32 @@ router.post('/webhooks/email-reply', async (req, res) => {
 
 router.get('/debug-status', async (req, res) => {
   try {
-    const leadStates = await prisma.lead.groupBy({
-      by: ['pipelineState'],
-      _count: { id: true }
-    });
+    const contactingCount = await prisma.lead.count({ where: { pipelineState: 'CONTACTING' } });
+    const newCount = await prisma.lead.count({ where: { pipelineState: 'NEW' } });
+    const sentCount = await prisma.lead.count({ where: { pipelineState: 'SENT' } });
 
-    const pendingLeads = await prisma.lead.findMany({
-      where: {
-        pipelineState: { in: ['NEW', 'CONTACTING'] }
-      },
+    const julioLeads = await prisma.lead.findMany({
+      where: { nombre: { contains: 'Julio', mode: 'insensitive' } },
       select: {
         id: true,
         nombre: true,
         correo: true,
-        pipelineState: true
-      },
-      take: 10
-    });
-
-    const pendingMessages = await prisma.leadMensaje.findMany({
-      where: { estado: 'pending' },
-      include: {
-        lead: { select: { nombre: true, correo: true } },
-        campana: { select: { nombre: true, asunto: true } }
-      },
-      take: 10
-    });
-
-    const lastEmails = await prisma.emailMessage.findMany({
-      orderBy: { creadoEn: 'desc' },
-      take: 10
+        pipelineState: true,
+        status: true
+      }
     });
 
     res.json({
       success: true,
-      leadStates,
-      pendingLeads,
-      pendingMessages,
-      lastEmails
+      counts: {
+        CONTACTING: contactingCount,
+        NEW: newCount,
+        SENT: sentCount
+      },
+      julioLeads
     });
   } catch (error) {
-    res.status(500).json({ error: error.message, stack: error.stack });
+    res.status(500).json({ error: error.message });
   }
 });
 
