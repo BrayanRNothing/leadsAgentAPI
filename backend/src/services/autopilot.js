@@ -147,6 +147,26 @@ async function loop() {
       return;
     }
 
+    // Cooldown persistente basado en la base de datos
+    const lastEmail = await prisma.emailMessage.findFirst({
+      where: { isIncoming: false },
+      orderBy: { sentAt: 'desc' }
+    });
+
+    if (lastEmail) {
+      const now = new Date();
+      const lastSentTime = new Date(lastEmail.sentAt);
+      const diffMs = now - lastSentTime;
+      const cooldownMs = (config.batchCooldownHours || 4) * 60 * 60 * 1000;
+
+      if (diffMs < cooldownMs) {
+        const remainingMs = cooldownMs - diffMs;
+        console.log(`[Auto-Piloto] Cooldown activo. El último correo se envió hace ${Math.round(diffMs / 60000)} min. Esperando ${Math.round(remainingMs / 60000)} min antes del siguiente lote...`);
+        currentTimeout = setTimeout(loop, remainingMs);
+        return;
+      }
+    }
+
     config = await refreshDailyCounter(config);
 
     if (config.sentTodayCount >= config.dailyLimit) {

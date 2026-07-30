@@ -33,6 +33,7 @@ router.get('/categorias', async (req, res) => {
 
 // Obtener leads de una categoría específica
 router.get('/categorias/:termino/leads', async (req, res) => {
+  console.log(`[ROUTE DEBUG] leads.js /categorias/:termino/leads called for ${req.params.termino} and query`, req.query);
   try {
     const { termino } = req.params;
     const { ubicacion } = req.query;
