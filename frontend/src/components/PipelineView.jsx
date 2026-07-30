@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, ExternalLink, MessageSquare, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, ExternalLink, MessageSquare, AlertCircle, RefreshCw, Calendar, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PIPELINE_COLUMNS = [
