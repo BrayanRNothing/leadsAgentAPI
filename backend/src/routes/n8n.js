@@ -7,10 +7,8 @@ router.get('/leads-outbound', async (req, res) => {
   try {
     const config = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
     
-    // Si la fase 2 global está desactivada, no enviar leads a n8n
-    if (!config?.globalActive || !config?.phase2Active) {
-      return res.json({ success: true, count: 0, leads: [], message: 'Fase 2 desactivada' });
-    }
+    // Desactivado para n8n ya que el backend ahora envía directamente con Resend
+    return res.json({ success: true, count: 0, leads: [], message: 'Envío directo por backend activo' });
 
     // Verificar límite diario
     const today = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().split("T")[0];
