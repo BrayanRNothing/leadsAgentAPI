@@ -9,13 +9,83 @@ export default function AutoPilotView({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailLoading, setGmailLoading] = useState(false);
   const pollRef = useRef(null);
 
   useEffect(() => {
     fetchConfig();
+    fetchGmailStatus();
     startPolling();
     return () => stopPolling();
   }, []);
+
+  const fetchGmailStatus = async () => {
+    try {
+      const res = await fetch(`${API}/api/gmail/status`);
+      const data = await res.json();
+      setGmailConnected(data.isConnected);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleConnectGmail = async () => {
+    setGmailLoading(true);
+    try {
+      const res = await fetch(`${API}/api/gmail/auth`);
+      const data = await res.json();
+      if (data.url) {
+        const width = 600, height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        const popup = window.open(data.url, 'Conectar Gmail', `width=${width},height=${height},left=${left},top=${top}`);
+        
+        const timer = setInterval(async () => {
+          if (!popup || popup.closed) {
+            clearInterval(timer);
+            setGmailLoading(false);
+          }
+          try {
+            const checkRes = await fetch(`${API}/api/gmail/status`);
+            const checkData = await checkRes.json();
+            if (checkData.isConnected) {
+              setGmailConnected(true);
+              clearInterval(timer);
+              setGmailLoading(false);
+              if (popup) popup.close();
+              setFeedback({ type: "success", msg: "Gmail conectado exitosamente." });
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }, 1500);
+      } else {
+        alert("No se pudo obtener la URL de autenticación de Gmail.");
+        setGmailLoading(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error al intentar conectar con Gmail.");
+      setGmailLoading(false);
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    if (!window.confirm("¿Seguro que deseas desconectar tu cuenta de Gmail?")) return;
+    setGmailLoading(true);
+    try {
+      const res = await fetch(`${API}/api/gmail/disconnect`, { method: 'POST' });
+      if (res.ok) {
+        setGmailConnected(false);
+        setFeedback({ type: "success", msg: "Gmail desconectado." });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setGmailLoading(false);
+    }
+  };
 
   const fetchConfig = async () => {
     try {
@@ -235,7 +305,45 @@ export default function AutoPilotView({ onBack }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-4">
+            {/* Conexión de Gmail */}
+            <div className="p-4 rounded-2xl flex flex-col gap-3" style={{ background: "#e0e5ec", boxShadow: nf }}>
+              <h3 className="text-[11px] font-black text-gray-700 border-b border-gray-300 pb-2 flex items-center gap-1.5">
+                <Mail size={12} className={gmailConnected ? "text-indigo-600" : "text-gray-400"} />
+                Conectividad con Gmail
+              </h3>
+              <div className="flex items-center justify-between py-1">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] font-black text-gray-500 uppercase">Estado de Conexión</span>
+                  <span className={`text-xs font-black ${gmailConnected ? "text-green-600" : "text-red-500"}`}>
+                    {gmailConnected ? "CONECTADO ✓" : "DESCONECTADO ✗"}
+                  </span>
+                </div>
+                {gmailConnected ? (
+                  <button
+                    type="button"
+                    disabled={gmailLoading}
+                    onClick={handleDisconnectGmail}
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-bold text-red-600 hover:text-white bg-red-50 hover:bg-red-500 border border-red-200 transition-all disabled:opacity-50"
+                  >
+                    Desconectar cuenta
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={gmailLoading}
+                    onClick={handleConnectGmail}
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-md shadow-indigo-100"
+                  >
+                    <Mail size={11} />
+                    {gmailLoading ? "Conectando..." : "Conectar Gmail"}
+                  </button>
+                )}
+              </div>
+              <p className="text-[9px] text-gray-500 leading-snug">
+                Conecta tu cuenta de Google para poder enviar correos y respuestas directas usando tu propia dirección.
+              </p>
+            </div>
+
             <div className="p-4 rounded-2xl flex flex-col gap-3" style={{ background: "#e0e5ec", boxShadow: nf }}>
               <h3 className="text-[11px] font-black text-gray-700 border-b border-gray-300 pb-2 flex items-center gap-1.5"><Send size={12}/> Parametros de Envio</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

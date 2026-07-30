@@ -267,7 +267,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                     {(() => {
                       const liveCounts = autoPilotStatus?.counts || {};
                       const pipelineStats = [
-                        { id: 'database', title: 'Base de Datos', count: liveCounts.inQueue ?? stats?.inegiNew, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
+                        { id: 'database', title: 'Base de Datos', count: stats?.inegiLeads || 0, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
                         { id: 'process', title: 'En Proceso', count: (liveCounts.sending || 0) + (liveCounts.sent || 0), icon: <Send size={24} color="#10b981" />, color: '#10b981', phase: 'SENT', route: '/history/inegi' },
                         { id: 'interested', title: 'Respuestas', count: (liveCounts.replied || 0) + (liveCounts.interested || 0), icon: <Flame size={24} color="#f59e0b" />, color: '#f59e0b', phase: 'REPLIED', route: '/pipeline/inegi' },
                       ];
