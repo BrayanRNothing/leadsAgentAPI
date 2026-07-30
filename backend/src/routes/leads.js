@@ -290,7 +290,7 @@ router.get('/pipeline', async (req, res) => {
     const leads = await prisma.lead.findMany({
       where: {
         pipelineState: {
-          in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED']
+          in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED', 'INVALID', 'REQUIRES_HUMAN', 'MEETING_BOOKED']
         }
       },
       include: {
