@@ -253,16 +253,62 @@ export default function PipelineView({ onBack }) {
               <h2 className="text-2xl font-extrabold text-slate-800 mb-1 pr-10">{selectedLead.nombre}</h2>
               <p className="text-sm font-medium text-slate-500 mb-6">{selectedLead.correo}</p>
 
-              <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-5">
+              <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-6">
                 
-                {/* Mensaje del cliente */}
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
-                  <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Mail size={12} /> Mensaje Recibido
+                {/* Historial de conversación */}
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Mail size={14} className="text-slate-400" /> Historial de Conversación
                   </h3>
-                  <div className="text-sm text-slate-700 whitespace-pre-wrap font-medium">
-                    {selectedLead.contactoEstado?.ultimoMensajeRecibido || <span className="text-slate-400 italic">No hay mensaje guardado.</span>}
-                  </div>
+                  
+                  {selectedLead.correos && selectedLead.correos.length > 0 ? (
+                    <div className="flex flex-col gap-4 p-2 bg-slate-50/50 rounded-2xl border border-slate-100 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                      {selectedLead.correos.map((correo) => {
+                        const isIncoming = correo.isIncoming;
+                        return (
+                          <div 
+                            key={correo.id} 
+                            className={`flex flex-col max-w-[85%] rounded-2xl p-4 shadow-sm border ${
+                              isIncoming 
+                                ? 'self-start bg-white border-slate-200 text-slate-800' 
+                                : 'self-end bg-indigo-600 border-indigo-700 text-white'
+                            }`}
+                          >
+                            {correo.subject && (
+                              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                                isIncoming ? 'text-slate-400' : 'text-indigo-200'
+                              }`}>
+                                Asunto: {correo.subject}
+                              </div>
+                            )}
+                            <div className="text-xs whitespace-pre-wrap font-medium leading-relaxed">
+                              {correo.bodyText}
+                            </div>
+                            <div className={`text-[9px] mt-2 text-right ${
+                              isIncoming ? 'text-slate-400' : 'text-indigo-200'
+                            }`}>
+                              {isIncoming ? 'Recibido' : 'Enviado'} • {new Date(correo.sentAt).toLocaleString('es-MX', { 
+                                day: 'numeric', 
+                                month: 'short', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                      <p className="text-xs text-slate-400 italic font-medium">No se han registrado correos interactivos para este lead.</p>
+                      {selectedLead.contactoEstado?.ultimoMensajeRecibido && (
+                        <div className="mt-4 text-left p-4 bg-white border border-slate-100 rounded-xl">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Último mensaje recibido:</span>
+                          <p className="text-xs text-slate-700 font-medium">{selectedLead.contactoEstado.ultimoMensajeRecibido}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Análisis de IA */}
@@ -275,7 +321,7 @@ export default function PipelineView({ onBack }) {
                       <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-black rounded-full mb-2">
                         {selectedLead.contactoEstado.aiAnalysis.classification}
                       </span>
-                      <p className="text-sm text-slate-600 font-medium mt-1">
+                      <p className="text-xs text-slate-600 font-medium mt-1">
                         <span className="font-bold text-slate-700">Razonamiento:</span> {selectedLead.contactoEstado.aiAnalysis.reasoning}
                       </p>
                     </div>
@@ -283,7 +329,7 @@ export default function PipelineView({ onBack }) {
                     {selectedLead.contactoEstado.aiAnalysis.suggested_reply && (
                       <div className="mt-4 pt-4 border-t border-indigo-100">
                         <span className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest block mb-3">Respuesta Sugerida por IA</span>
-                        <div className="text-sm text-slate-600 font-medium bg-white p-4 rounded-xl border border-indigo-50 shadow-sm">
+                        <div className="text-xs text-slate-600 font-medium bg-white p-4 rounded-xl border border-indigo-50 shadow-sm leading-relaxed whitespace-pre-wrap">
                           {selectedLead.contactoEstado.aiAnalysis.suggested_reply}
                         </div>
                       </div>

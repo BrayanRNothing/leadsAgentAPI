@@ -297,6 +297,9 @@ router.get('/pipeline', async (req, res) => {
         mensajes: {
           orderBy: { enviadoEn: 'desc' },
           take: 1
+        },
+        correos: {
+          orderBy: { sentAt: 'asc' }
         }
       },
       orderBy: { id: 'desc' }
