@@ -305,6 +305,7 @@ export default function AutoPilotView({ onBack }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {/* Conexión de Gmail */}
             <div className="p-4 rounded-2xl flex flex-col gap-3" style={{ background: "#e0e5ec", boxShadow: nf }}>
               <h3 className="text-[11px] font-black text-gray-700 border-b border-gray-300 pb-2 flex items-center gap-1.5">
