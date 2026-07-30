@@ -296,6 +296,7 @@ router.get('/pipeline', async (req, res) => {
       include: {
         mensajes: {
           orderBy: { enviadoEn: 'desc' },
+          include: { campana: true },
           take: 1
         },
         correos: {
@@ -329,6 +330,71 @@ router.get('/pipeline-stats', async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo pipeline stats:', error.message);
     res.status(500).json({ error: 'Error al obtener pipeline stats' });
+  }
+});
+
+// POST /api/leads/:id/responder - Enviar respuesta manual por correo
+router.post('/:id/responder', async (req, res) => {
+  const { id } = req.params;
+  const { asunto, cuerpo } = req.body;
+  if (!cuerpo) {
+    return res.status(400).json({ error: 'El cuerpo del correo es obligatorio' });
+  }
+
+  try {
+    const lead = await prisma.lead.findUnique({ where: { id: parseInt(id) } });
+    if (!lead || !lead.correo) {
+      return res.status(404).json({ error: 'Lead no encontrado o no tiene correo electrónico' });
+    }
+
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    const finalSubject = asunto || 'Seguimiento - Infiniguard';
+
+    // Enviar correo con Resend
+    const sendResult = await resend.emails.send({
+      from: fromEmail,
+      to: lead.correo,
+      subject: finalSubject,
+      html: cuerpo.replace(/\n/g, '<br/>')
+    });
+
+    if (sendResult.error) {
+      throw new Error(sendResult.error.message);
+    }
+
+    // Guardar en el historial de correos
+    const nuevoCorreo = await prisma.emailMessage.create({
+      data: {
+        leadId: lead.id,
+        isIncoming: false,
+        subject: finalSubject,
+        bodyText: cuerpo
+      }
+    });
+
+    // Actualizar el pipelineState a FOLLOW_UP (En Seguimiento)
+    const updatedLead = await prisma.lead.update({
+      where: { id: lead.id },
+      data: { 
+        pipelineState: 'FOLLOW_UP' 
+      },
+      include: {
+        mensajes: {
+          orderBy: { enviadoEn: 'desc' },
+          take: 1
+        },
+        correos: {
+          orderBy: { sentAt: 'asc' }
+        }
+      }
+    });
+
+    res.json({ success: true, lead: updatedLead, nuevoCorreo });
+  } catch (error) {
+    console.error('Error al enviar respuesta manual:', error);
+    res.status(500).json({ error: 'Error al enviar correo: ' + error.message });
   }
 });
 

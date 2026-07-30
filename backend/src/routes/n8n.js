@@ -231,14 +231,48 @@ Responde ÚNICAMENTE con JSON válido (sin markdown):
 function cleanEmailText(text) {
   if (!text) return "(Sin texto)";
   let cleaned = text;
-  // Remover historial de correos citado
-  const regex = /(\bEl\s+.+?escribió:|\bOn\s+.+?wrote:|---)/i;
-  const match = cleaned.match(regex);
-  if (match) {
-    cleaned = cleaned.substring(0, match.index);
+  
+  // Dividir por delimitadores comunes de correo citado
+  const delimiters = [
+    /^[> \t]*De:\s+/mi,
+    /^[> \t]*From:\s+/mi,
+    /^[> \t]*Para:\s+/mi,
+    /^[> \t]*To:\s+/mi,
+    /^[> \t]*Enviado el:\s+/mi,
+    /^[> \t]*Sent:\s+/mi,
+    /^[> \t]*Date:\s+/mi,
+    /^[> \t]*Fecha:\s+/mi,
+    /^[> \t]*Subject:\s+/mi,
+    /^[> \t]*Asunto:\s+/mi,
+    /\bEl\s+.+?escribió:/i,
+    /\bOn\s+.+?wrote:/i,
+    /---/,
+    /___/,
+    /^-{3,}/,
+    /^_{3,}/
+  ];
+
+  for (const delimiter of delimiters) {
+    const match = cleaned.match(delimiter);
+    if (match) {
+      cleaned = cleaned.substring(0, match.index);
+    }
   }
-  // Remover = o espacios extras al inicio (falla común de Gmail con n8n)
+
+  // Quitar líneas que empiecen por '>' (citas de email antiguas)
+  cleaned = cleaned
+    .split('\n')
+    .filter(line => !line.trim().startsWith('>'))
+    .join('\n');
+
+  // Limpiar caracteres extraños Quoted-Printable si existieran (=3D, =0A, etc.)
+  cleaned = cleaned.replace(/=3D/g, '=').replace(/=0A/g, '\n').replace(/=20/g, ' ');
+
+  // Limpiar caracteres sueltos '=' al final de líneas de codificación de email
+  cleaned = cleaned.replace(/=\r?\n/g, '');
+
   cleaned = cleaned.replace(/^[\s=]+/, '').trim();
+  
   return cleaned || "(Sin texto)";
 }
 
