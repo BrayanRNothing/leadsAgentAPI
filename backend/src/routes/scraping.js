@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -69,7 +69,7 @@ function pointInFeature(lng, lat, feature) {
 }
 
 
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 async function fetchPage(url) {
   try {

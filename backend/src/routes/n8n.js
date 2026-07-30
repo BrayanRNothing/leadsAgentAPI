@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // 1. Endpoint para que n8n extraiga leads listos para enviar (Outbound)
 router.get('/leads-outbound', async (req, res) => {

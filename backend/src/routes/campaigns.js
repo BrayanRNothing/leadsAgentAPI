@@ -1,9 +1,7 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { Resend } = require('resend');
-
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
+const { Resend } = require('resend');
 // API Key deberia estar en el .env, pero para inicializar usaremos process.env.RESEND_API_KEY
 const resend = new Resend(process.env.RESEND_API_KEY);
 

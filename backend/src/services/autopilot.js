@@ -1,6 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../prisma");
 const { Resend } = require("resend");
-const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
 
 let isRunning = false;

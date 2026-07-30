@@ -1,8 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;

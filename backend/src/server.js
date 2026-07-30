@@ -13,8 +13,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/scraping', scrapingRoutes);
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('./prisma');
 
 app.get('/api/home-stats', async (req, res) => {
   try {

@@ -1,11 +1,7 @@
 require('dotenv').config();
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
-
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } }
-});
+const prisma = require('../prisma');
 
 // Obtener categorías agrupadas por término y ubicación
 router.get('/categorias', async (req, res) => {
