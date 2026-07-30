@@ -10,7 +10,7 @@ router.get('/categorias', async (req, res) => {
       by: ['terminoBusqueda', 'ubicacion'],
       where: {
         status: { not: 'discarded' },
-        pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'] }
+        pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED'] }
       },
       _count: {
         _all: true
@@ -38,7 +38,7 @@ router.get('/categorias/:termino/leads', async (req, res) => {
     const { ubicacion } = req.query;
 
     const whereObj = {
-      pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED'] }
+      pipelineState: { notIn: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED'] }
     };
     
     if (termino !== 'ALL') {
@@ -107,9 +107,18 @@ router.patch('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
+    // Cuando se descarta, también cambiar pipelineState a DISCARDED
+    // Cuando se restaura, poner pipelineState de vuelta a NEW
+    const updateData = { status };
+    if (status === 'discarded') {
+      updateData.pipelineState = 'DISCARDED';
+    } else if (status === 'active') {
+      updateData.pipelineState = 'NEW';
+    }
+
     const lead = await prisma.lead.update({
       where: { id: Number(id) },
-      data: { status }
+      data: updateData
     });
     
     // Si el lead viene de INEGI, también actualizar en InegiLead global para tacharlo
@@ -280,9 +289,8 @@ router.get('/pipeline', async (req, res) => {
   try {
     const leads = await prisma.lead.findMany({
       where: {
-        status: { not: 'discarded' },
         pipelineState: {
-          in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED']
+          in: ['REPLIED', 'INTERESTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'DISCARDED']
         }
       },
       include: {

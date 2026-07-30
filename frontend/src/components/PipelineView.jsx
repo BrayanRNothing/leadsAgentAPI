@@ -11,7 +11,8 @@ const PIPELINE_COLUMNS = [
   { id: 'FOLLOW_UP', label: 'En Seguimiento', borderColor: 'border-teal-400', badgeBg: 'bg-teal-100', badgeText: 'text-teal-700', icon: <RefreshCw size={14}/> },
   { id: 'REQUIRES_HUMAN', label: 'Requiere Humano', borderColor: 'border-purple-400', badgeBg: 'bg-purple-100', badgeText: 'text-purple-700', icon: <AlertCircle size={14}/> },
   { id: 'INVALID', label: 'Inválidos/Spam', borderColor: 'border-gray-400', badgeBg: 'bg-gray-200', badgeText: 'text-gray-700', icon: <AlertCircle size={14}/> },
-  { id: 'NOT_INTERESTED', label: 'Descartados', borderColor: 'border-red-400', badgeBg: 'bg-red-100', badgeText: 'text-red-700', icon: <AlertCircle size={14}/> }
+  { id: 'NOT_INTERESTED', label: 'No Interesados', borderColor: 'border-red-400', badgeBg: 'bg-red-100', badgeText: 'text-red-700', icon: <AlertCircle size={14}/> },
+  { id: 'DISCARDED', label: 'Descartados', borderColor: 'border-red-600', badgeBg: 'bg-red-200', badgeText: 'text-red-800', icon: <AlertCircle size={14}/> }
 ];
 
 export default function PipelineView({ onBack }) {
