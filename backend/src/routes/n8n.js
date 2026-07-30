@@ -387,4 +387,13 @@ router.get('/debug-status', async (req, res) => {
   }
 });
 
+router.get('/debug-simple', async (req, res) => {
+  try {
+    const totalCount = await prisma.lead.count();
+    res.json({ success: true, totalCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
