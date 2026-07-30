@@ -76,6 +76,17 @@ async function sendEmailToLead(lead, config) {
   subject = subject.replace(/{{nombre_empresa}}/g, lead.nombre || 'Empresa');
   subject = subject.replace(/{{nombre}}/g, lead.nombre || 'Empresa');
 
+  // Extract Calendly link from availability or use a fallback
+  let calendlyUrl = 'https://calendly.com';
+  if (config?.availability) {
+    const urlMatch = config.availability.match(/https?:\/\/[^\s"']+/);
+    if (urlMatch) {
+      calendlyUrl = urlMatch[0];
+    }
+  }
+  body = body.replace(/\[LINK_CALENDLY\]/g, calendlyUrl);
+  subject = subject.replace(/\[LINK_CALENDLY\]/g, calendlyUrl);
+
   // Enviar con Resend
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
   

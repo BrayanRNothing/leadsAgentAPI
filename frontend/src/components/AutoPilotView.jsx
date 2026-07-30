@@ -283,7 +283,10 @@ export default function AutoPilotView({ onBack }) {
                   className="w-full h-36 bg-transparent border-none outline-none text-gray-800 text-[11px] px-3 py-2 rounded-xl resize-none" style={{ boxShadow: ni }} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-gray-700">Disponibilidad / Link Calendly</label>
+                <label className="text-[10px] font-bold text-gray-700 flex justify-between">
+                  <span>Disponibilidad / Link Calendly</span>
+                  <span className="text-[9px] text-indigo-600 font-extrabold uppercase">Tip: Incluye tu link completo https://calendly.com/...</span>
+                </label>
                 <textarea value={config.availability || ''} onChange={e => setConfig({ ...config, availability: e.target.value })}
                   className="w-full h-16 bg-transparent border-none outline-none text-gray-800 text-[11px] px-3 py-2 rounded-xl resize-none" style={{ boxShadow: ni }} />
               </div>
