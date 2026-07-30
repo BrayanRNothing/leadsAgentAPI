@@ -29,13 +29,25 @@ router.get('/leads-outbound', async (req, res) => {
     const remaining = config.dailyLimit - config.sentTodayCount;
     if (limit > remaining) limit = remaining;
 
-    const leadsDb = await prisma.lead.findMany({
+    let leadsDb = await prisma.lead.findMany({
       where: {
-        pipelineState: { in: ['NEW', 'CONTACTING'] }, 
+        pipelineState: 'CONTACTING', 
         correo: { not: null }
       },
       take: limit
     });
+
+    if (leadsDb.length < limit) {
+      const remainingLimit = limit - leadsDb.length;
+      const newLeads = await prisma.lead.findMany({
+        where: {
+          pipelineState: 'NEW', 
+          correo: { not: null }
+        },
+        take: remainingLimit
+      });
+      leadsDb = [...leadsDb, ...newLeads];
+    }
 
     const leads = [];
     for (const l of leadsDb) {
