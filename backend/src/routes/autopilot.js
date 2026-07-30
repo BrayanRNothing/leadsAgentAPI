@@ -62,12 +62,14 @@ router.put('/config', async (req, res) => {
 router.get('/status', async (req, res) => {
   try {
     const config = await prisma.autoPilotConfig.findUnique({ where: { id: 1 } });
-    const [inProcess, sent, replied, interested, classified] = await Promise.all([
-      prisma.lead.count({ where: { pipelineState: 'NEW' } }),
+    const [inQueue, sending, sent, replied, interested, classified, discarded] = await Promise.all([
+      prisma.lead.count({ where: { pipelineState: 'NEW', correo: { not: null } } }),
+      prisma.lead.count({ where: { pipelineState: 'CONTACTING' } }),
       prisma.lead.count({ where: { pipelineState: 'SENT' } }),
       prisma.lead.count({ where: { pipelineState: 'REPLIED' } }),
       prisma.lead.count({ where: { pipelineState: 'INTERESTED' } }),
       prisma.lead.count({ where: { pipelineState: { in: ['INTERESTED','NOT_INTERESTED','MEETING_BOOKED','FOLLOW_UP','REQUIRES_HUMAN','INVALID'] } } }),
+      prisma.lead.count({ where: { pipelineState: 'DISCARDED' } }),
     ]);
     res.json({
       isRunning: autopilotService.getIsRunning(),
@@ -77,7 +79,7 @@ router.get('/status', async (req, res) => {
       phase3Active: config?.phase3Active || false,
       sentTodayCount: config?.sentTodayCount || 0,
       dailyLimit: config?.dailyLimit || 200,
-      counts: { inProcess, sent, replied, interested, classified }
+      counts: { inQueue, sending, sent, replied, interested, classified, discarded }
     });
   } catch (error) {
     console.error(error);

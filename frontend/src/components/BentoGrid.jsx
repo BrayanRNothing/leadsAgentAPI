@@ -113,12 +113,15 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
   const [stats, setStats] = useState({ mapsLeads: 0, inegiLeads: 0 });
   const [aiStats, setAiStats] = useState({ usedTokens: 0, maxTokens: 500000 });
   const [autoPilotConfig, setAutoPilotConfig] = useState(null);
+  const [autoPilotStatus, setAutoPilotStatus] = useState(null);
 
   React.useEffect(() => {
-    fetch('https://leadsagentapi-production.up.railway.app/api/home-stats')
-      .then(r => r.json())
-      .then(data => setStats(data))
-      .catch(e => console.error("Error fetching home stats", e));
+    const fetchHomeStats = () => {
+      fetch('https://leadsagentapi-production.up.railway.app/api/home-stats')
+        .then(r => r.json())
+        .then(data => setStats(data))
+        .catch(() => {});
+    };
 
     fetch('https://leadsagentapi-production.up.railway.app/api/ai-stats')
       .then(r => r.json())
@@ -134,12 +137,21 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
             return JSON.stringify(prev) === JSON.stringify(d) ? prev : d;
           });
         })
-        .catch(e => {
-          // Fallo silencioso en caso de pérdida de conexión
-        });
+        .catch(() => {});
+      
+      fetch('https://leadsagentapi-production.up.railway.app/api/autopilot/status')
+        .then(r => r.json())
+        .then(d => {
+          setAutoPilotStatus(prev => {
+            if (!prev) return d;
+            return JSON.stringify(prev) === JSON.stringify(d) ? prev : d;
+          });
+        })
+        .catch(() => {});
     };
+    fetchHomeStats();
     checkBot();
-    const interval = setInterval(checkBot, 5000);
+    const interval = setInterval(() => { checkBot(); fetchHomeStats(); }, 4000);
     return () => clearInterval(interval);
   }, [location.pathname]);
 
@@ -253,10 +265,11 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                   <div className="w-full flex flex-col items-center">
                     <h2 className="text-xs sm:text-sm font-black text-teal-600 uppercase tracking-widest mb-6 text-center">Pipeline Principal</h2>
                     {(() => {
+                      const liveCounts = autoPilotStatus?.counts || {};
                       const pipelineStats = [
-                        { id: 'database', title: 'Base de Datos', count: stats?.inegiNew, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
-                        { id: 'process', title: 'En Proceso', count: stats?.inegiSent, icon: <Send size={24} color="#10b981" />, color: '#10b981', phase: 'SENT', route: '/history/inegi' },
-                        { id: 'interested', title: 'Respuestas', count: stats?.inegiInterested, icon: <Flame size={24} color="#f59e0b" />, color: '#f59e0b', phase: 'REPLIED', route: '/pipeline/inegi' },
+                        { id: 'database', title: 'Base de Datos', count: liveCounts.inQueue ?? stats?.inegiNew, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
+                        { id: 'process', title: 'En Proceso', count: (liveCounts.sending || 0) + (liveCounts.sent || 0), icon: <Send size={24} color="#10b981" />, color: '#10b981', phase: 'SENT', route: '/history/inegi' },
+                        { id: 'interested', title: 'Respuestas', count: (liveCounts.replied || 0) + (liveCounts.interested || 0), icon: <Flame size={24} color="#f59e0b" />, color: '#f59e0b', phase: 'REPLIED', route: '/pipeline/inegi' },
                       ];
                       return (
                         <div className="flex flex-col sm:flex-row items-center sm:items-end justify-center gap-10 sm:gap-4 mb-12">
@@ -270,10 +283,10 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                               const p1 = autoPilotConfig?.phase1Active && autoPilotConfig?.globalActive;
                               if (p1) {
                                 statusActive = true;
-                                if (stat.count === 0) {
-                                  statusText = "Buscando en INEGI...";
+                                if ((liveCounts.inQueue || 0) === 0) {
+                                  statusText = "Sin leads en cola";
                                 } else {
-                                  statusText = "En reposo (Lote listo)";
+                                  statusText = `${liveCounts.inQueue} leads en cola`;
                                 }
                               } else {
                                 statusText = "Fase 1 inactiva";
@@ -284,15 +297,18 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                             if (idx === 1) {
                               const p2 = autoPilotConfig?.phase2Active && autoPilotConfig?.globalActive;
                               if (p2) {
-                                if (pipelineStats[0].count > 0) {
+                                if ((liveCounts.sending || 0) > 0) {
                                   statusActive = true;
-                                  statusText = "Enviando en cola...";
+                                  statusText = `Enviando ${liveCounts.sending} correo(s)...`;
+                                } else if ((liveCounts.inQueue || 0) > 0) {
+                                  statusActive = true;
+                                  statusText = "Preparando envío...";
                                 } else {
-                                  statusText = "En reposo (0 en cola)";
+                                  statusText = "Todos enviados ✓";
                                 }
                                 extraData = (
                                   <span className="text-[9px] font-black uppercase text-indigo-600">
-                                    {autoPilotConfig?.sentTodayCount || 0}/{autoPilotConfig?.dailyLimit || 200} ENV.
+                                    {autoPilotStatus?.sentTodayCount || 0}/{autoPilotStatus?.dailyLimit || 200} ENV.
                                   </span>
                                 );
                               } else {

@@ -180,12 +180,14 @@ export default function AutoPilotView({ onBack }) {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            <StatBox icon={<Database size={15}/>} label="En Cola" value={counts.inProcess} color="text-blue-500" />
-            <StatBox icon={<Send size={15}/>} label="Enviados" value={counts.sent} color="text-indigo-500" />
+          <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+            <StatBox icon={<Database size={15}/>} label="En Cola" value={counts.inQueue} color="text-blue-500" />
+            <StatBox icon={<Send size={15}/>} label="Enviando..." value={counts.sending} color="text-yellow-500" />
+            <StatBox icon={<CheckCircle2 size={15}/>} label="Enviados" value={counts.sent} color="text-indigo-500" />
             <StatBox icon={<Inbox size={15}/>} label="Respondieron" value={counts.replied} color="text-amber-500" />
             <StatBox icon={<Users size={15}/>} label="Interesados" value={counts.interested} color="text-orange-500" />
-            <StatBox icon={<CheckCircle2 size={15}/>} label="Clasificados" value={counts.classified} color="text-green-500" />
+            <StatBox icon={<Activity size={15}/>} label="Clasificados" value={counts.classified} color="text-green-500" />
+            <StatBox icon={<AlertCircle size={15}/>} label="Descartados" value={counts.discarded} color="text-red-500" />
           </div>
           {status?.dailyLimit > 0 && (
             <div className="mt-3 flex items-center gap-2">
