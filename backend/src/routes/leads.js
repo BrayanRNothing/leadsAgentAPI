@@ -348,22 +348,15 @@ router.post('/:id/responder', async (req, res) => {
       return res.status(404).json({ error: 'Lead no encontrado o no tiene correo electrónico' });
     }
 
-    const { Resend } = require('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    const { sendGmailEmail } = require('../services/gmail');
     const finalSubject = asunto || 'Seguimiento - Infiniguard';
 
-    // Enviar correo con Resend
-    const sendResult = await resend.emails.send({
-      from: fromEmail,
+    // Enviar correo con Gmail OAuth
+    const sendResult = await sendGmailEmail({
       to: lead.correo,
       subject: finalSubject,
-      html: cuerpo.replace(/\n/g, '<br/>')
+      body: cuerpo.replace(/\n/g, '<br/>')
     });
-
-    if (sendResult.error) {
-      throw new Error(sendResult.error.message);
-    }
 
     // Guardar en el historial de correos
     const nuevoCorreo = await prisma.emailMessage.create({

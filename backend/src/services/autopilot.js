@@ -1,6 +1,5 @@
 const prisma = require("../prisma");
-const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
+const { sendGmailEmail } = require("./gmail");
 
 let isRunning = false;
 let currentTimeout = null;
@@ -87,17 +86,14 @@ async function sendEmailToLead(lead, config) {
   body = body.replace(/\[LINK_CALENDLY\]/g, calendlyUrl);
   subject = subject.replace(/\[LINK_CALENDLY\]/g, calendlyUrl);
 
-  // Enviar con Resend
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-  
-  const result = await resend.emails.send({
-    from: fromEmail,
+  // Enviar con Gmail OAuth
+  const result = await sendGmailEmail({
     to: lead.correo,
     subject: subject,
-    html: body
+    body: body
   });
 
-  console.log(`[Auto-Piloto] ✅ Correo enviado a ${lead.nombre} (${lead.correo}) - ID: ${result.data?.id || 'ok'}`);
+  console.log(`[Auto-Piloto] ✅ Correo enviado vía Gmail a ${lead.nombre} (${lead.correo}) - ID: ${result?.id || 'ok'}`);
 
   // Actualizar lead a SENT
   let contactoEstado = lead.contactoEstado || { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" };
