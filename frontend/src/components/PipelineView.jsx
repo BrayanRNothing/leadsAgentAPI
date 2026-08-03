@@ -169,6 +169,12 @@ export default function PipelineView({ onBack }) {
                       <p className="text-xs font-medium text-slate-400 mb-3 truncate">
                         {lead.categoria || lead.terminoBusqueda}
                       </p>
+
+                      {isDiscarded && lead.contactoEstado?.estado && (
+                        <div className="mb-3 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded border border-red-100 truncate">
+                          Motivo: {lead.contactoEstado.estado}
+                        </div>
+                      )}
                       
                       <div className={`text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-lg p-2 mb-3 ${isDiscarded ? 'opacity-60' : ''}`}>
                         {lead.mensajes && lead.mensajes.length > 0 && lead.mensajes[0].enviadoEn ? (
@@ -336,16 +342,28 @@ export default function PipelineView({ onBack }) {
                     )}
                   </div>
                 )}
-                {/* Sugerencia de IA - solo lectura */}
+                {/* Sugerencia de IA y Botón de Respuesta */}
                 {selectedLead.contactoEstado?.aiAnalysis?.suggested_reply && (
                   <div className="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-100">
                     <h3 className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                       <AlertCircle size={12} /> Respuesta Sugerida por IA
                     </h3>
-                    <p className="text-xs text-slate-500 mb-3 italic">Copia este texto y responde desde tu cliente de correo.</p>
-                    <div className="text-xs text-slate-700 font-medium bg-white p-4 rounded-xl border border-indigo-50 shadow-sm leading-relaxed whitespace-pre-wrap">
+                    <div className="text-xs text-slate-700 font-medium bg-white p-4 rounded-xl border border-indigo-50 shadow-sm leading-relaxed whitespace-pre-wrap mb-4">
                       {selectedLead.contactoEstado.aiAnalysis.suggested_reply}
                     </div>
+                    
+                    <button 
+                      onClick={() => {
+                        const subject = selectedLead.correos && selectedLead.correos.length > 0 && selectedLead.correos[selectedLead.correos.length - 1].subject 
+                          ? `Re: ${selectedLead.correos[selectedLead.correos.length - 1].subject.replace(/^Re:\s*/i, '')}` 
+                          : 'Seguimiento Infiniguard';
+                        const body = selectedLead.contactoEstado.aiAnalysis.suggested_reply;
+                        window.open(`mailto:${selectedLead.correo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-colors shadow-sm"
+                    >
+                      <Mail size={16} /> Abrir correo con respuesta copiada
+                    </button>
                   </div>
                 )}
                 
