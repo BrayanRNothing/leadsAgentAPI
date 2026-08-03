@@ -143,6 +143,17 @@ async function loop() {
       return;
     }
 
+    // Verificar si Gmail está conectado antes de proceder
+    if (!config.gmailAccessToken || !config.gmailRefreshToken) {
+      console.log("[Auto-Piloto] ⚠️ Gmail no está conectado en la configuración. Deteniendo envío automático para evitar procesar leads.");
+      isRunning = false;
+      await prisma.autoPilotConfig.update({
+        where: { id: 1 },
+        data: { phase2Active: false }
+      }).catch(() => {});
+      return;
+    }
+
     // Cooldown persistente basado en la base de datos
     const lastEmail = await prisma.emailMessage.findFirst({
       where: { isIncoming: false },
@@ -268,11 +279,41 @@ async function loop() {
       } catch (emailErr) {
         console.error(`[Auto-Piloto] ❌ Error enviando a ${lead.nombre} (${lead.correo}):`, emailErr.message);
         
-        // Marcar como INVALID si falló el envío
-        await prisma.lead.update({
-          where: { id: lead.id },
-          data: { pipelineState: 'INVALID' }
-        }).catch(() => {});
+        const errMsg = (emailErr.message || '').toLowerCase();
+        const isAuthError = errMsg.includes('gmail no está conectado') || 
+                            errMsg.includes('invalid login') || 
+                            errMsg.includes('auth') || 
+                            errMsg.includes('credentials') ||
+                            errMsg.includes('username and password not accepted');
+
+        if (isAuthError) {
+          // Si es un error de credenciales/autenticación general, restaurar lead a NEW y detener el autopilot
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: { pipelineState: 'NEW' }
+          }).catch(() => {});
+          
+          console.log("[Auto-Piloto] Error crítico de autenticación detectado. Deteniendo Auto-Piloto.");
+          isRunning = false;
+          await prisma.autoPilotConfig.update({
+            where: { id: 1 },
+            data: { phase2Active: false }
+          }).catch(() => {});
+          break; // Salir del bucle de envío
+        } else {
+          // Si es un error de dirección de correo inválida / rebotado, marcar como INVALID.
+          // Si es un error temporal (ej. timeout de red), regresarlo a NEW para reintento.
+          const isInvalidAddress = errMsg.includes('recipient') || 
+                                   errMsg.includes('address') || 
+                                   errMsg.includes('parameter') || 
+                                   errMsg.includes('format') ||
+                                   errMsg.includes('invalid mailbox');
+
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: { pipelineState: isInvalidAddress ? 'INVALID' : 'NEW' }
+          }).catch(() => {});
+        }
       }
     }
 

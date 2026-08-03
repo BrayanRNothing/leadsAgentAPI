@@ -266,6 +266,11 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                     <h2 className="text-xs sm:text-sm font-black text-teal-600 uppercase tracking-widest mb-6 text-center">Pipeline Principal</h2>
                     {(() => {
                       const liveCounts = autoPilotStatus?.counts || {};
+                      const isGlobalActive = autoPilotStatus?.globalActive || autoPilotConfig?.globalActive || false;
+                      const isPhase1Active = autoPilotStatus?.phase1Active || autoPilotConfig?.phase1Active || false;
+                      const isPhase2Active = autoPilotStatus?.phase2Active || autoPilotConfig?.phase2Active || false;
+                      const isPhase3Active = autoPilotStatus?.phase3Active || autoPilotConfig?.phase3Active || false;
+
                       const pipelineStats = [
                         { id: 'database', title: 'Base de Datos', count: stats?.inegiLeads || 0, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
                         { id: 'process', title: 'En Proceso', count: (liveCounts.sending || 0) + (liveCounts.sent || 0), icon: <Send size={24} color="#10b981" />, color: '#10b981', phase: 'SENT', route: '/history/inegi' },
@@ -280,7 +285,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                             
                             // Caja 1: Base de Datos (Fase 1)
                             if (idx === 0) {
-                              const p1 = autoPilotConfig?.phase1Active && autoPilotConfig?.globalActive;
+                              const p1 = isPhase1Active && isGlobalActive;
                               if (p1) {
                                 statusActive = true;
                                 if ((liveCounts.inQueue || 0) === 0) {
@@ -295,7 +300,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                             
                             // Caja 2: En Proceso (Fase 2)
                             if (idx === 1) {
-                              const p2 = autoPilotConfig?.phase2Active && autoPilotConfig?.globalActive;
+                              const p2 = isPhase2Active && isGlobalActive;
                               if (p2) {
                                 if ((liveCounts.sending || 0) > 0) {
                                   statusActive = true;
@@ -318,7 +323,7 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                             
                             // Caja 3: Respuestas (Fase 3)
                             if (idx === 2) {
-                              const p3 = autoPilotConfig?.phase3Active && autoPilotConfig?.globalActive;
+                              const p3 = isPhase3Active && isGlobalActive;
                               if (p3) {
                                 statusActive = true;
                                 statusText = "IA Escuchando...";
@@ -378,21 +383,21 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                       transition={{ delay: 0.8 }}
                       className="flex items-center justify-center gap-4 px-6 py-4 rounded-3xl cursor-pointer hover:scale-105 active:scale-95 transition-all relative group"
                       style={{
-                        background: autoPilotConfig?.globalActive ? 'linear-gradient(145deg, #10b981, #059669)' : '#e0e5ec',
-                        boxShadow: autoPilotConfig?.globalActive 
+                        background: isGlobalActive ? 'linear-gradient(145deg, #10b981, #059669)' : '#e0e5ec',
+                        boxShadow: isGlobalActive 
                           ? '0 10px 20px rgba(16, 185, 129, 0.4), inset 2px 2px 5px rgba(255,255,255,0.3)'
                           : '6px 6px 12px rgba(163,177,198,0.5), -6px -6px 12px rgba(255,255,255,0.9)'
                       }}
                     >
-                      <div className={`p-2 rounded-full ${autoPilotConfig?.globalActive ? 'bg-white bg-opacity-20' : 'bg-indigo-100'}`}>
-                        <Play size={20} color={autoPilotConfig?.globalActive ? '#fff' : '#4f46e5'} className={autoPilotConfig?.globalActive ? 'animate-pulse' : ''} />
+                      <div className={`p-2 rounded-full ${isGlobalActive ? 'bg-white bg-opacity-20' : 'bg-indigo-100'}`}>
+                        <Play size={20} color={isGlobalActive ? '#fff' : '#4f46e5'} className={isGlobalActive ? 'animate-pulse' : ''} />
                       </div>
                       <div className="flex flex-col">
-                        <span className={`text-sm font-black ${autoPilotConfig?.globalActive ? 'text-white' : 'text-gray-800'}`}>
+                        <span className={`text-sm font-black ${isGlobalActive ? 'text-white' : 'text-gray-800'}`}>
                           Configurar Auto-Piloto
                         </span>
-                        <span className={`text-[10px] font-bold ${autoPilotConfig?.globalActive ? 'text-green-100' : 'text-gray-500'}`}>
-                          {autoPilotConfig?.globalActive ? 'ACTIVO - Procesando Leads' : 'Clic para abrir'}
+                        <span className={`text-[10px] font-bold ${isGlobalActive ? 'text-green-100' : 'text-gray-500'}`}>
+                          {isGlobalActive ? 'ACTIVO - Procesando Leads' : 'Clic para abrir'}
                         </span>
                       </div>
                     </motion.div>
