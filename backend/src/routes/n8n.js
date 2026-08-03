@@ -387,6 +387,47 @@ router.post('/webhooks/email-reply', async (req, res) => {
   }
 });
 
+// POST /api/n8n/webhooks/resend-events
+// Usado por Resend para notificar si un correo rebotó (no existe)
+router.post('/webhooks/resend-events', async (req, res) => {
+  try {
+    const event = req.body;
+    
+    // Solo nos interesan los rebotes (cuando el correo no existe o rebota)
+    if (event.type === 'email.bounced' || event.type === 'email.complained') {
+      const emailTo = event.data?.to?.[0];
+      if (emailTo) {
+        const lead = await prisma.lead.findFirst({
+          where: { correo: { equals: emailTo, mode: 'insensitive' } }
+        });
+
+        if (lead) {
+          console.log(`❌ [Resend Webhook] Correo rebotado/inválido para: ${emailTo}. Marcando lead como INVALID.`);
+          
+          let contactoActual = typeof lead.contactoEstado === 'string' 
+            ? JSON.parse(lead.contactoEstado) 
+            : (lead.contactoEstado || {});
+            
+          contactoActual.estado = 'Rebotado / Inválido';
+
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: { 
+              pipelineState: 'INVALID',
+              contactoEstado: contactoActual
+            }
+          });
+        }
+      }
+    }
+    
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Error en webhook de Resend:', error);
+    res.status(500).json({ success: false });
+  }
+});
+
 router.get('/debug-status', async (req, res) => {
   try {
     const contactingCount = await prisma.lead.count({ where: { pipelineState: 'CONTACTING' } });
