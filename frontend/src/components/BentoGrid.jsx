@@ -115,6 +115,11 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
   const [autoPilotConfig, setAutoPilotConfig] = useState(null);
   const [autoPilotStatus, setAutoPilotStatus] = useState(null);
 
+  const isGlobalActive = autoPilotStatus?.globalActive || autoPilotConfig?.globalActive || false;
+  const isPhase1Active = autoPilotStatus?.phase1Active || autoPilotConfig?.phase1Active || false;
+  const isPhase2Active = autoPilotStatus?.phase2Active || autoPilotConfig?.phase2Active || false;
+  const isPhase3Active = autoPilotStatus?.phase3Active || autoPilotConfig?.phase3Active || false;
+
   React.useEffect(() => {
     const fetchHomeStats = () => {
       fetch('https://leadsagentapi-production.up.railway.app/api/home-stats')
@@ -266,10 +271,6 @@ export default function BentoGrid({ isAuthenticated, onLogin }) {
                     <h2 className="text-xs sm:text-sm font-black text-teal-600 uppercase tracking-widest mb-6 text-center">Pipeline Principal</h2>
                     {(() => {
                       const liveCounts = autoPilotStatus?.counts || {};
-                      const isGlobalActive = autoPilotStatus?.globalActive || autoPilotConfig?.globalActive || false;
-                      const isPhase1Active = autoPilotStatus?.phase1Active || autoPilotConfig?.phase1Active || false;
-                      const isPhase2Active = autoPilotStatus?.phase2Active || autoPilotConfig?.phase2Active || false;
-                      const isPhase3Active = autoPilotStatus?.phase3Active || autoPilotConfig?.phase3Active || false;
 
                       const pipelineStats = [
                         { id: 'database', title: 'Base de Datos', count: stats?.inegiLeads || 0, icon: <Database size={24} color="#3b82f6" />, color: '#3b82f6', phase: 'NEW', route: '/inegi' },
