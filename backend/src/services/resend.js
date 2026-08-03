@@ -3,7 +3,7 @@ const { Resend } = require('resend');
 // Asegúrate de que el API Key exista
 const resend = new Resend(process.env.RESEND_API_KEY || 're_key');
 
-async function sendResendEmail({ to, subject, body, fromEmail = 'brayan@updm-mx.com' }) {
+async function sendResendEmail({ to, subject, body, fromEmail = 'brayan@updm.mx' }) {
   if (!process.env.RESEND_API_KEY) {
     throw new Error('RESEND_API_KEY no está configurada en las variables de entorno.');
   }

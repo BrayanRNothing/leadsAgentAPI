@@ -97,7 +97,7 @@ async function sendEmailToLead(lead, config) {
     to: lead.correo,
     subject: subject,
     body: body,
-    fromEmail: 'brayan@updm-mx.com' // <-- Hardcodeado según indicación del usuario
+    fromEmail: 'brayan@updm.mx' // <-- Hardcodeado según indicación del usuario
   });
 
   console.log(`[Auto-Piloto] ✅ Correo enviado vía Resend a ${lead.nombre} (${lead.correo}) - ID: ${result?.id || 'ok'}`);
