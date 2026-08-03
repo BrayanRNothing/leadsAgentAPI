@@ -1,5 +1,5 @@
 const prisma = require("../prisma");
-const { sendGmailEmail } = require("./gmail");
+const { sendResendEmail } = require("./resend");
 
 let isRunning = false;
 let currentTimeout = null;
@@ -92,14 +92,15 @@ async function sendEmailToLead(lead, config) {
   body = body.replace(/\[LINK_CALENDLY\]/g, calendlyUrl);
   subject = subject.replace(/\[LINK_CALENDLY\]/g, calendlyUrl);
 
-  // Enviar con Gmail OAuth
-  const result = await sendGmailEmail({
+  // Enviar con Resend
+  const result = await sendResendEmail({
     to: lead.correo,
     subject: subject,
-    body: body
+    body: body,
+    fromEmail: 'brayan@updm-mx.com' // <-- Hardcodeado según indicación del usuario
   });
 
-  console.log(`[Auto-Piloto] ✅ Correo enviado vía Gmail a ${lead.nombre} (${lead.correo}) - ID: ${result?.id || 'ok'}`);
+  console.log(`[Auto-Piloto] ✅ Correo enviado vía Resend a ${lead.nombre} (${lead.correo}) - ID: ${result?.id || 'ok'}`);
 
   // Actualizar lead a SENT
   let contactoEstado = lead.contactoEstado || { correo: false, whatsapp: false, llamada: false, estado: "En Proceso" };
@@ -149,9 +150,9 @@ async function loop() {
       return;
     }
 
-    // Verificar si Gmail está conectado antes de proceder
-    if (!config.gmailAccessToken || !config.gmailRefreshToken) {
-      console.log("[Auto-Piloto] ⚠️ Gmail no está conectado. Deteniendo loop en memoria. Configura Gmail en el Panel de Automatización.");
+    // Nota: Eliminamos el check de Gmail porque ahora usamos Resend
+    if (!process.env.RESEND_API_KEY) {
+      console.log("[Auto-Piloto] ⚠️ RESEND_API_KEY no está configurada. Deteniendo loop en memoria.");
       isRunning = false;
       return;
     }
