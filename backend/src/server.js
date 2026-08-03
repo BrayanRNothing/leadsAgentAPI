@@ -18,13 +18,27 @@ const prisma = require('./prisma');
 app.get('/api/home-stats', async (req, res) => {
   try {
     const INEGI_SOURCES = ['inegi_saved', 'inegi', 'inegi_autopilot'];
+    
+    // Filtros idénticos a los del autopilot para contar solo leads calificados
+    const keywords = [
+      "hotel","resort","motel","hospedaje","posada",
+      "hospital","clinica","sanatorio","medico","salud",
+      "comercial","plaza","supermercado","mall","corporativo","departamental",
+      "industria","fabrica","planta","manufactura"
+    ];
+    const orConditions = keywords.flatMap(kw => [
+      { nombre: { contains: kw, mode: "insensitive" } },
+      { categoria: { contains: kw, mode: "insensitive" } }
+    ]);
+
     const [mapsLeads, inegiNew, inegiSent, inegiInterested, inegiRaw] = await Promise.all([
       prisma.mapsLead.count({ where: { status: { not: 'discarded' } } }),
       prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: 'NEW' } }),
       prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['CONTACTING', 'SENT'] } } }),
       prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'REQUIRES_HUMAN'] } } }),
-      prisma.inegiLead.count({ where: { status: 'active' } })
+      prisma.inegiLead.count({ where: { status: 'active', correo: { not: null }, OR: orConditions } })
     ]);
+
     res.json({ 
       mapsLeads, 
       inegiLeads: inegiNew + inegiSent + inegiRaw,  // Total real: procesados + sin procesar
