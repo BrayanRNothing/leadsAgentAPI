@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, ExternalLink, MessageSquare, AlertCircle, RefreshCw, Calendar, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, ExternalLink, MessageSquare, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PIPELINE_COLUMNS = [
@@ -22,44 +22,6 @@ export default function PipelineView({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [draggedLeadId, setDraggedLeadId] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [replyText, setReplyText] = useState('');
-  const [replySubject, setReplySubject] = useState('');
-  const [replying, setReplying] = useState(false);
-
-  useEffect(() => {
-    if (selectedLead) {
-      const prevSubject = selectedLead.correos?.[selectedLead.correos.length - 1]?.subject || 
-                          selectedLead.mensajes?.[0]?.campana?.asunto || 
-                          'Propuesta de Valor';
-      const cleanSubject = prevSubject.startsWith('Re:') ? prevSubject : `Re: ${prevSubject}`;
-      setReplySubject(cleanSubject);
-    } else {
-      setReplyText('');
-      setReplySubject('');
-    }
-  }, [selectedLead]);
-
-  const handleSendReply = async () => {
-    if (!replyText.trim()) return alert('El cuerpo de la respuesta es obligatorio.');
-    setReplying(true);
-    try {
-      const res = await axios.post(`https://leadsagentapi-production.up.railway.app/api/leads/${selectedLead.id}/responder`, {
-        asunto: replySubject || 'Seguimiento - Infiniguard',
-        cuerpo: replyText
-      });
-      if (res.data.success) {
-        setLeads(prev => prev.map(l => l.id === selectedLead.id ? res.data.lead : l));
-        setSelectedLead(res.data.lead);
-        setReplyText('');
-        alert('Respuesta enviada con éxito. El lead ahora está en Seguimiento.');
-      }
-    } catch (error) {
-      console.error('Error al enviar respuesta:', error);
-      alert('Error al enviar respuesta: ' + (error.response?.data?.error || error.message));
-    } finally {
-      setReplying(false);
-    }
-  };
 
   const fetchPipeline = async () => {
     setLoading(true);
@@ -374,56 +336,18 @@ export default function PipelineView({ onBack }) {
                     )}
                   </div>
                 )}
-                {/* Responder por Correo */}
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Send size={14} className="text-indigo-500" /> Responder por Correo
-                    </span>
-                    {selectedLead.contactoEstado?.aiAnalysis?.suggested_reply && (
-                      <button
-                        type="button"
-                        onClick={() => setReplyText(selectedLead.contactoEstado.aiAnalysis.suggested_reply)}
-                        className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors"
-                      >
-                        Usar sugerencia de IA
-                      </button>
-                    )}
-                  </h3>
-
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-400">Asunto del Correo</label>
-                      <input 
-                        type="text" 
-                        value={replySubject}
-                        onChange={(e) => setReplySubject(e.target.value)}
-                        className="w-full bg-white border border-slate-200 outline-none text-xs text-slate-700 px-3 py-2 rounded-xl focus:border-indigo-400 transition-colors" 
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-slate-400">Cuerpo del Correo</label>
-                      <textarea 
-                        rows={4}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="Escribe tu correo de respuesta aquí..."
-                        className="w-full bg-white border border-slate-200 outline-none text-xs text-slate-700 px-3 py-2 rounded-xl resize-none focus:border-indigo-400 transition-colors"
-                      />
+                {/* Sugerencia de IA - solo lectura */}
+                {selectedLead.contactoEstado?.aiAnalysis?.suggested_reply && (
+                  <div className="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-100">
+                    <h3 className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <AlertCircle size={12} /> Respuesta Sugerida por IA
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-3 italic">Copia este texto y responde desde tu cliente de correo.</p>
+                    <div className="text-xs text-slate-700 font-medium bg-white p-4 rounded-xl border border-indigo-50 shadow-sm leading-relaxed whitespace-pre-wrap">
+                      {selectedLead.contactoEstado.aiAnalysis.suggested_reply}
                     </div>
                   </div>
-
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={handleSendReply}
-                      disabled={replying}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 active:scale-95 shadow-md shadow-indigo-100"
-                    >
-                      <Send size={14} /> {replying ? "Enviando..." : "Enviar Correo"}
-                    </button>
-                  </div>
-                </div>
+                )}
                 
               </div>
             </motion.div>

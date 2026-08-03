@@ -17,11 +17,12 @@ const prisma = require('./prisma');
 
 app.get('/api/home-stats', async (req, res) => {
   try {
+    const INEGI_SOURCES = ['inegi_saved', 'inegi', 'inegi_autopilot'];
     const [mapsLeads, inegiNew, inegiSent, inegiInterested] = await Promise.all([
       prisma.mapsLead.count({ where: { status: { not: 'discarded' } } }),
-      prisma.lead.count({ where: { fuente: { in: ['inegi_saved', 'inegi'] }, status: { not: 'discarded' }, pipelineState: 'NEW' } }),
-      prisma.lead.count({ where: { fuente: { in: ['inegi_saved', 'inegi'] }, status: { not: 'discarded' }, pipelineState: { in: ['CONTACTING', 'SENT'] } } }),
-      prisma.lead.count({ where: { fuente: { in: ['inegi_saved', 'inegi'] }, status: { not: 'discarded' }, pipelineState: { in: ['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'REQUIRES_HUMAN'] } } })
+      prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: 'NEW' } }),
+      prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['CONTACTING', 'SENT'] } } }),
+      prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'REQUIRES_HUMAN'] } } })
     ]);
     res.json({ 
       mapsLeads, 
@@ -35,6 +36,7 @@ app.get('/api/home-stats', async (req, res) => {
     res.status(500).json({ mapsLeads: 0, inegiLeads: 0, inegiNew: 0, inegiSent: 0, inegiInterested: 0 });
   }
 });
+
 
 app.use('/api/leads', leadsRoutes);
 app.use('/api/maps', require('./routes/maps'));

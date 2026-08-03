@@ -145,14 +145,11 @@ async function loop() {
 
     // Verificar si Gmail está conectado antes de proceder
     if (!config.gmailAccessToken || !config.gmailRefreshToken) {
-      console.log("[Auto-Piloto] ⚠️ Gmail no está conectado en la configuración. Deteniendo envío automático para evitar procesar leads.");
+      console.log("[Auto-Piloto] ⚠️ Gmail no está conectado. Deteniendo loop en memoria. Configura Gmail en el Panel de Automatización.");
       isRunning = false;
-      await prisma.autoPilotConfig.update({
-        where: { id: 1 },
-        data: { phase2Active: false }
-      }).catch(() => {});
       return;
     }
+
 
     // Cooldown persistente basado en la base de datos
     const lastEmail = await prisma.emailMessage.findFirst({
