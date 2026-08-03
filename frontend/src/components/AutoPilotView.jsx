@@ -122,6 +122,8 @@ export default function AutoPilotView({ onBack }) {
         body: JSON.stringify(toSave)
       });
       if (!res.ok) throw new Error("save failed");
+      // Relanzar el loop siempre que global esté activo
+      // (no solo al cambiar global, sino también al activar cualquier fase)
       if (toSave.globalActive) {
         await fetch(`${API}/api/autopilot/start`, { method: "POST" });
       } else {
@@ -134,6 +136,7 @@ export default function AutoPilotView({ onBack }) {
     }
     setSaving(false);
   };
+
 
   const toggleGlobal = (val) => {
     const next = { ...config, globalActive: val };

@@ -18,22 +18,24 @@ const prisma = require('./prisma');
 app.get('/api/home-stats', async (req, res) => {
   try {
     const INEGI_SOURCES = ['inegi_saved', 'inegi', 'inegi_autopilot'];
-    const [mapsLeads, inegiNew, inegiSent, inegiInterested] = await Promise.all([
+    const [mapsLeads, inegiNew, inegiSent, inegiInterested, inegiRaw] = await Promise.all([
       prisma.mapsLead.count({ where: { status: { not: 'discarded' } } }),
       prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: 'NEW' } }),
       prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['CONTACTING', 'SENT'] } } }),
-      prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'REQUIRES_HUMAN'] } } })
+      prisma.lead.count({ where: { fuente: { in: INEGI_SOURCES }, status: { not: 'discarded' }, pipelineState: { in: ['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'REQUIRES_HUMAN'] } } }),
+      prisma.inegiLead.count({ where: { status: 'active' } })
     ]);
     res.json({ 
       mapsLeads, 
-      inegiLeads: inegiNew + inegiSent, 
+      inegiLeads: inegiNew + inegiSent + inegiRaw,  // Total real: procesados + sin procesar
+      inegiRaw,   // Leads sin procesar en banco INEGI
       inegiNew, 
       inegiSent, 
       inegiInterested 
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ mapsLeads: 0, inegiLeads: 0, inegiNew: 0, inegiSent: 0, inegiInterested: 0 });
+    res.status(500).json({ mapsLeads: 0, inegiLeads: 0, inegiNew: 0, inegiSent: 0, inegiInterested: 0, inegiRaw: 0 });
   }
 });
 

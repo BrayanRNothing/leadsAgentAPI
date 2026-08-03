@@ -31,7 +31,13 @@ function getMsUntilMidnightMX() {
 }
 
 async function startAutoPilot() {
-  if (isRunning) return;
+  // Si ya está corriendo, reiniciar el loop para recoger la nueva config de fases
+  if (isRunning) {
+    console.log("[Auto-Piloto] Ya corriendo — reiniciando loop para aplicar nueva configuración de fases...");
+    if (currentTimeout) clearTimeout(currentTimeout);
+    loop();
+    return;
+  }
   isRunning = true;
   console.log("[Auto-Piloto] Iniciando...");
   await prisma.autoPilotConfig.upsert({
