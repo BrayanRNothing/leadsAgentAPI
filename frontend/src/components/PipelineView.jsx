@@ -170,9 +170,15 @@ export default function PipelineView({ onBack }) {
                         {lead.categoria || lead.terminoBusqueda}
                       </p>
 
-                      {isDiscarded && lead.contactoEstado?.estado && (
-                        <div className="mb-3 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded border border-red-100 truncate">
-                          Motivo: {lead.contactoEstado.estado}
+                      {(isDiscarded || lead.pipelineState === 'INVALID') && (lead.contactoEstado?.razonInvalido || lead.contactoEstado?.estado) && (
+                        <div className="mb-3 px-2 py-1.5 bg-red-50 text-red-700 text-[10px] font-medium rounded-lg border border-red-100 flex flex-col gap-0.5">
+                          <span className="font-black text-red-600 uppercase tracking-wide text-[9px]">⚠ Razón de descarte</span>
+                          <span className="leading-snug">{lead.contactoEstado.razonInvalido || lead.contactoEstado.estado}</span>
+                          {lead.contactoEstado?.fechaInvalido && (
+                            <span className="text-red-400 text-[8px] mt-0.5">
+                              {new Date(lead.contactoEstado.fechaInvalido).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
                         </div>
                       )}
                       
@@ -287,8 +293,24 @@ export default function PipelineView({ onBack }) {
                                 Asunto: {correo.subject}
                               </div>
                             )}
-                            <div className="text-xs whitespace-pre-wrap font-medium leading-relaxed">
-                              {correo.bodyText}
+                            <div className="text-xs font-medium leading-relaxed">
+                              {!isIncoming && correo.bodyText?.trim().startsWith('<') ? (
+                                <iframe
+                                  srcDoc={correo.bodyText}
+                                  title="Email preview"
+                                  sandbox="allow-same-origin"
+                                  className="w-full rounded-xl border-0 bg-white"
+                                  style={{ minHeight: '260px', maxHeight: '400px' }}
+                                  onLoad={(e) => {
+                                    try {
+                                      const h = e.target.contentDocument?.body?.scrollHeight;
+                                      if (h) e.target.style.height = Math.min(h + 20, 400) + 'px';
+                                    } catch(_) {}
+                                  }}
+                                />
+                              ) : (
+                                <span className="whitespace-pre-wrap">{correo.bodyText}</span>
+                              )}
                             </div>
                             <div className={`text-[9px] mt-2 text-right ${
                               isIncoming ? 'text-slate-400' : 'text-indigo-200'

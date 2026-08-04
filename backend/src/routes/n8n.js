@@ -408,7 +408,13 @@ router.post('/webhooks/resend-events', async (req, res) => {
             ? JSON.parse(lead.contactoEstado) 
             : (lead.contactoEstado || {});
             
+          const reason = event.type === 'email.bounced'
+            ? '📭 Correo rebotado — El servidor destino rechazó el mensaje (correo inexistente o buzón lleno)'
+            : '🚫 Marcado como SPAM — El destinatario reportó el correo como no deseado';
+
           contactoActual.estado = 'Rebotado / Inválido';
+          contactoActual.razonInvalido = reason;
+          contactoActual.fechaInvalido = new Date().toISOString();
 
           await prisma.lead.update({
             where: { id: lead.id },
