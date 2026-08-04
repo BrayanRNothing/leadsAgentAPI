@@ -174,11 +174,34 @@ export default function PipelineView({ onBack }) {
                         <div className="mb-3 px-2 py-1.5 bg-red-50 text-red-700 text-[10px] font-medium rounded-lg border border-red-100 flex flex-col gap-0.5">
                           <span className="font-black text-red-600 uppercase tracking-wide text-[9px]">⚠ Razón de descarte</span>
                           <span className="leading-snug">{lead.contactoEstado.razonInvalido || lead.contactoEstado.estado}</span>
-                          {lead.contactoEstado?.fechaInvalido && (
+                          {(lead.contactoEstado?.fechaInvalido || lead.contactoEstado?.fechaEstado) && (
                             <span className="text-red-400 text-[8px] mt-0.5">
-                              {new Date(lead.contactoEstado.fechaInvalido).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(lead.contactoEstado.fechaInvalido || lead.contactoEstado.fechaEstado).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
                           )}
+                        </div>
+                      )}
+
+                      {lead.contactoEstado?.fechaEstado && !['NEW', 'SENT', 'CONTACTING', 'INVALID', 'DISCARDED'].includes(lead.pipelineState) && (
+                        <div className="mb-3 px-2.5 py-1.5 bg-indigo-50/50 text-indigo-700 text-[10px] font-semibold rounded-lg border border-indigo-100/50 flex justify-between items-center">
+                          <span>
+                            {lead.pipelineState === 'REPLIED' && '✉ Respondió:'}
+                            {lead.pipelineState === 'INTERESTED' && '🔥 Se interesó:'}
+                            {lead.pipelineState === 'MEETING_BOOKED' && '📅 Agendó cita:'}
+                            {lead.pipelineState === 'FOLLOW_UP' && '🔄 En seguimiento:'}
+                            {lead.pipelineState === 'REQUIRES_HUMAN' && '👤 Ocupa humano:'}
+                            {lead.pipelineState === 'NOT_INTERESTED' && '🛑 No interesado:'}
+                            {!['REPLIED', 'INTERESTED', 'MEETING_BOOKED', 'FOLLOW_UP', 'REQUIRES_HUMAN', 'NOT_INTERESTED'].includes(lead.pipelineState) && '⚡ Actualizado:'}
+                          </span>
+                          <span className="font-bold">
+                            {new Date(lead.contactoEstado.fechaEstado).toLocaleString('es-MX', { 
+                              day: 'numeric', 
+                              month: 'short', 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                          </span>
                         </div>
                       )}
                       

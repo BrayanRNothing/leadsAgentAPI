@@ -267,15 +267,35 @@ router.patch('/:id/contacto', async (req, res) => {
   }
 });
 
-// Actualizar el pipelineState de un lead (ej: SELECTED, CONTACTING, REPLIED...)
 router.patch('/:id/pipeline', async (req, res) => {
   try {
     const { id } = req.params;
     const { pipelineState } = req.body;
 
+    const currentLead = await prisma.lead.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    let contactoActual = typeof currentLead?.contactoEstado === 'string'
+      ? JSON.parse(currentLead.contactoEstado)
+      : (currentLead?.contactoEstado || {});
+
+    contactoActual.fechaEstado = new Date().toISOString();
+    
+    if (pipelineState === 'INVALID') {
+      contactoActual.estado = 'Inválido';
+      contactoActual.fechaInvalido = new Date().toISOString();
+      if (!contactoActual.razonInvalido) {
+        contactoActual.razonInvalido = '⚠️ Marcado manualmente como inválido';
+      }
+    }
+
     const lead = await prisma.lead.update({
       where: { id: parseInt(id) },
-      data: { pipelineState }
+      data: { 
+        pipelineState,
+        contactoEstado: contactoActual
+      }
     });
 
     res.json(lead);

@@ -355,7 +355,9 @@ router.post('/webhooks/email-reply', async (req, res) => {
         contactoEstado: {
           ...contactoActual,
           ultimoMensajeRecibido: cleanEmailText(text),
-          aiAnalysis: aiAnalysis || null
+          aiAnalysis: aiAnalysis || null,
+          fechaEstado: new Date().toISOString(),
+          fechaRespuesta: new Date().toISOString()
         }
       }
     });
@@ -415,6 +417,7 @@ router.post('/webhooks/resend-events', async (req, res) => {
           contactoActual.estado = 'Rebotado / Inválido';
           contactoActual.razonInvalido = reason;
           contactoActual.fechaInvalido = new Date().toISOString();
+          contactoActual.fechaEstado = new Date().toISOString();
 
           await prisma.lead.update({
             where: { id: lead.id },
