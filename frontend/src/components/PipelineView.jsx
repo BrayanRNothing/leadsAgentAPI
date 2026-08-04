@@ -186,7 +186,7 @@ export default function PipelineView({ onBack }) {
                         {lead.mensajes && lead.mensajes.length > 0 && lead.mensajes[0].enviadoEn ? (
                           <div className="flex items-center gap-1.5 mb-1">
                             <Mail size={12} className="text-indigo-400" />
-                            Enviado: {new Date(lead.mensajes[0].enviadoEn).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                            Enviado: {new Date(lead.mensajes[0].enviadoEn).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 mb-1">
@@ -196,7 +196,7 @@ export default function PipelineView({ onBack }) {
                         )}
                         <div className="flex items-center gap-1.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                          Ingresó: {new Date(lead.creadoEn).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                          Ingresó: {new Date(lead.creadoEn).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
                         </div>
                       </div>
                       
