@@ -213,23 +213,38 @@ async function loop() {
 
         const rawLeads = await prisma.inegiLead.findMany({
           where: { correo: { not: null }, status: "active", OR: orConditions },
-          take: needed
+          take: needed * 3
         });
 
         if (rawLeads.length > 0) {
-          const leadsToInsert = rawLeads.map(raw => ({
-            nombre: raw.nombre, telefono: raw.telefono, sitioWeb: raw.sitioWeb,
-            correo: raw.correo, direccion: raw.direccion, categoria: raw.categoria,
-            terminoBusqueda: raw.terminoBusqueda || "INEGI Automatico",
-            ubicacion: raw.ubicacion, lat: raw.lat, lng: raw.lng,
-            fuente: "inegi_autopilot", pipelineState: "NEW"
-          }));
-          await prisma.lead.createMany({ data: leadsToInsert, skipDuplicates: true });
+          const existingLeads = await prisma.lead.findMany({
+            where: { correo: { not: null } },
+            select: { correo: true }
+          });
+          const existingEmails = new Set(existingLeads.map(l => l.correo.toLowerCase().trim()));
+
+          const uniqueRawLeads = rawLeads
+            .filter(raw => !existingEmails.has(raw.correo.toLowerCase().trim()))
+            .slice(0, needed);
+
+          if (uniqueRawLeads.length > 0) {
+            const leadsToInsert = uniqueRawLeads.map(raw => ({
+              nombre: raw.nombre, telefono: raw.telefono, sitioWeb: raw.sitioWeb,
+              correo: raw.correo, direccion: raw.direccion, categoria: raw.categoria,
+              terminoBusqueda: raw.terminoBusqueda || "INEGI Automatico",
+              ubicacion: raw.ubicacion, lat: raw.lat, lng: raw.lng,
+              fuente: "inegi_autopilot", pipelineState: "NEW"
+            }));
+            await prisma.lead.createMany({ data: leadsToInsert, skipDuplicates: true });
+            console.log(`[Auto-Piloto] Fase 1: ${uniqueRawLeads.length} leads únicos importados a la cola.`);
+          } else {
+            console.log(`[Auto-Piloto] Fase 1: Encontrados leads, pero todos ya existen en el CRM.`);
+          }
+
           await prisma.inegiLead.updateMany({
             where: { id: { in: rawLeads.map(l => l.id) } },
             data: { status: "processed_autopilot" }
           });
-          console.log(`[Auto-Piloto] Fase 1: ${rawLeads.length} leads importados a la cola.`);
         } else {
           console.log(`[Auto-Piloto] Fase 1: No hay mas leads en INEGI que coincidan.`);
         }
@@ -258,12 +273,48 @@ async function loop() {
       return;
     }
 
-    console.log(`[Auto-Piloto] Fase 2: Enviando correos a ${pendingLeads.length} leads con Resend...`);
+    // --- FILTRADO DE DUPLICADOS EN COLA ---
+    const contactedLeads = await prisma.lead.findMany({
+      where: {
+        pipelineState: { in: ['SENT', 'REPLIED', 'INTERESTED', 'NOT_INTERESTED', 'FOLLOW_UP', 'DISCARDED', 'REQUIRES_HUMAN', 'MEETING_BOOKED', 'INVALID'] },
+        correo: { not: null }
+      },
+      select: { correo: true }
+    });
+    const contactedEmails = new Set(contactedLeads.map(l => l.correo.toLowerCase().trim()));
+
+    const finalPendingLeads = [];
+    const seenInBatch = new Set();
+
+    for (const lead of pendingLeads) {
+      const email = lead.correo.toLowerCase().trim();
+      if (!contactedEmails.has(email) && !seenInBatch.has(email)) {
+        finalPendingLeads.push(lead);
+        seenInBatch.add(email);
+      } else {
+        console.log(`[Auto-Piloto] Descartando duplicado en cola: ${lead.nombre} (${lead.correo})`);
+        await prisma.lead.update({
+          where: { id: lead.id },
+          data: {
+            pipelineState: 'DISCARDED',
+            contactoEstado: { estado: 'Duplicado descartado automáticamente' }
+          }
+        });
+      }
+    }
+
+    if (finalPendingLeads.length === 0) {
+      console.log("[Auto-Piloto] Todos los leads en el lote eran duplicados/ya enviados. Reintentando en 5s...");
+      currentTimeout = setTimeout(loop, 5 * 1000);
+      return;
+    }
+
+    console.log(`[Auto-Piloto] Fase 2: Enviando correos a ${finalPendingLeads.length} leads con Resend...`);
 
     let sentCount = 0;
     const delaySeconds = config.delaySeconds || 30;
 
-    for (const lead of pendingLeads) {
+    for (const lead of finalPendingLeads) {
       if (!isRunning) break;
       
       try {
