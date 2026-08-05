@@ -190,6 +190,52 @@ async function loop() {
     const remaining = config.dailyLimit - config.sentTodayCount;
     const batchSize = Math.min(config.batchSize, remaining);
 
+    // Fase 1: Mantener la cola de leads nuevos en 200
+    if (config.phase1Active) {
+      const currentQueueSize = await prisma.lead.count({ 
+        where: { pipelineState: 'NEW', correo: { not: null } } 
+      });
+      
+      if (currentQueueSize < 200) {
+        const needed = 200 - currentQueueSize;
+        console.log(`[Auto-Piloto] Fase 1: Cola en ${currentQueueSize}/200. Buscando ${needed} leads en INEGI...`);
+        
+        const keywords = [
+          "hotel","resort","motel","hospedaje","posada",
+          "hospital","clinica","sanatorio","medico","salud",
+          "comercial","plaza","supermercado","mall","corporativo","departamental",
+          "industria","fabrica","planta","manufactura"
+        ];
+        const orConditions = keywords.flatMap(kw => [
+          { nombre: { contains: kw, mode: "insensitive" } },
+          { categoria: { contains: kw, mode: "insensitive" } }
+        ]);
+
+        const rawLeads = await prisma.inegiLead.findMany({
+          where: { correo: { not: null }, status: "active", OR: orConditions },
+          take: needed
+        });
+
+        if (rawLeads.length > 0) {
+          const leadsToInsert = rawLeads.map(raw => ({
+            nombre: raw.nombre, telefono: raw.telefono, sitioWeb: raw.sitioWeb,
+            correo: raw.correo, direccion: raw.direccion, categoria: raw.categoria,
+            terminoBusqueda: raw.terminoBusqueda || "INEGI Automatico",
+            ubicacion: raw.ubicacion, lat: raw.lat, lng: raw.lng,
+            fuente: "inegi_autopilot", pipelineState: "NEW"
+          }));
+          await prisma.lead.createMany({ data: leadsToInsert, skipDuplicates: true });
+          await prisma.inegiLead.updateMany({
+            where: { id: { in: rawLeads.map(l => l.id) } },
+            data: { status: "processed_autopilot" }
+          });
+          console.log(`[Auto-Piloto] Fase 1: ${rawLeads.length} leads importados a la cola.`);
+        } else {
+          console.log(`[Auto-Piloto] Fase 1: No hay mas leads en INEGI que coincidan.`);
+        }
+      }
+    }
+
     // Primero tomar leads en CONTACTING (campañas manuales)
     let pendingLeads = await prisma.lead.findMany({
       where: { pipelineState: 'CONTACTING', correo: { not: null } },
@@ -204,45 +250,6 @@ async function loop() {
         take: remainingSlots
       });
       pendingLeads = [...pendingLeads, ...newLeads];
-    }
-
-    // Si no hay leads disponibles y fase 1 activa, traer de INEGI
-    if (pendingLeads.length === 0 && config.phase1Active) {
-      const keywords = [
-        "hotel","resort","motel","hospedaje","posada",
-        "hospital","clinica","sanatorio","medico","salud",
-        "comercial","plaza","supermercado","mall","corporativo","departamental",
-        "industria","fabrica","planta","manufactura"
-      ];
-      const orConditions = keywords.flatMap(kw => [
-        { nombre: { contains: kw, mode: "insensitive" } },
-        { categoria: { contains: kw, mode: "insensitive" } }
-      ]);
-
-      console.log("[Auto-Piloto] Fase 1: Buscando leads calificados en INEGI...");
-      const rawLeads = await prisma.inegiLead.findMany({
-        where: { correo: { not: null }, status: "active", OR: orConditions },
-        take: batchSize
-      });
-
-      if (rawLeads.length > 0) {
-        const leadsToInsert = rawLeads.map(raw => ({
-          nombre: raw.nombre, telefono: raw.telefono, sitioWeb: raw.sitioWeb,
-          correo: raw.correo, direccion: raw.direccion, categoria: raw.categoria,
-          terminoBusqueda: raw.terminoBusqueda || "INEGI Automatico",
-          ubicacion: raw.ubicacion, lat: raw.lat, lng: raw.lng,
-          fuente: "inegi_autopilot", pipelineState: "NEW"
-        }));
-        await prisma.lead.createMany({ data: leadsToInsert, skipDuplicates: true });
-        await prisma.inegiLead.updateMany({
-          where: { id: { in: rawLeads.map(l => l.id) } },
-          data: { status: "processed_autopilot" }
-        });
-        pendingLeads = await prisma.lead.findMany({
-          where: { pipelineState: "NEW", fuente: "inegi_autopilot" },
-          take: batchSize
-        });
-      }
     }
 
     if (pendingLeads.length === 0) {
